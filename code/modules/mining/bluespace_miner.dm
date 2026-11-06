@@ -15,6 +15,8 @@
 	var/status_message = "Idle"
 	/// Time required to produce a sheet, in seconds.
 	var/production_interval = 5
+	/// Effective tier of installed machine parts; defaults to tier one.
+	var/parts_tier = 1
 	/// Lowest acceptable surrounding pressure, in kPa.
 	var/minimum_pressure = 100
 	/// Maximum acceptable surrounding temperature, in kelvin (exclusive).
@@ -35,6 +37,20 @@
 		/obj/item/stack/sheet/mineral/titanium,
 		/obj/item/stack/sheet/mineral/diamond,
 	)
+
+/// Recalculate the output interval from the installed machine part tier.
+/obj/machinery/bluespace_miner/proc/set_parts_tier(new_tier)
+	parts_tier = clamp(round(new_tier), 1, 4)
+	switch(parts_tier)
+		if(1)
+			production_interval = 5
+		if(2)
+			production_interval = 4
+		if(3)
+			production_interval = 3
+		if(4)
+			production_interval = 1
+	production_progress = min(production_progress, production_interval)
 
 /obj/machinery/bluespace_miner/proc/atmosphere_is_valid()
 	var/turf/open/miner_turf = get_turf(src)
@@ -74,7 +90,7 @@
 /obj/machinery/bluespace_miner/examine(mob/user)
 	. = ..()
 	. += span_notice("Requires at least [minimum_pressure] kPa of almost pure plasma below [maximum_temperature] K, plus electrical power.")
-	. += span_notice("Produces one random mineral sheet every [production_interval] seconds while operating.")
+	. += span_notice("Produces one mineral sheet every [production_interval] seconds while operating.")
 
 // A simple interactive control panel; a full TGUI frontend can replace this later.
 /obj/machinery/bluespace_miner/attack_hand(mob/living/user, list/modifiers)
