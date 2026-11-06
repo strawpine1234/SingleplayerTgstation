@@ -97,6 +97,8 @@
 			if(operating || occupant || !state_open || !ishuman(usr) || !Adjacent(usr))
 				return FALSE
 			close_machine(usr)
+			if(occupant == usr && surgical_payload)
+				begin_surgery()
 			return TRUE
 		if("exit")
 			if(operating || !occupant)
@@ -111,18 +113,22 @@
 			status_text = "Payload ejected."
 			return TRUE
 		if("start")
-			if(operating || state_open || !ishuman(occupant) || !surgical_payload || !is_operational)
-				return FALSE
-			var/mob/living/carbon/human/patient = occupant
-			if(!can_operate(patient))
-				to_chat(usr, span_warning("The loaded item is incompatible with this patient."))
-				return FALSE
-			operating = TRUE
-			status_text = "Surgery in progress (10 seconds)."
-			visible_message(span_notice("[src] seals its surgical instruments around [patient]."))
-			addtimer(CALLBACK(src, PROC_REF(finish_procedure), patient, surgical_payload), procedure_duration)
-			return TRUE
+			return begin_surgery()
 	return FALSE
+
+/obj/machinery/sleeper/autodoc/proc/begin_surgery()
+	if(operating || state_open || !ishuman(occupant) || !surgical_payload || !is_operational)
+		return FALSE
+	var/mob/living/carbon/human/patient = occupant
+	if(!can_operate(patient))
+		status_text = "Cannot operate: payload incompatible with patient."
+		to_chat(patient, span_warning("[src] cannot use the loaded item on your anatomy."))
+		return FALSE
+	operating = TRUE
+	status_text = "Surgery in progress (10 seconds)."
+	visible_message(span_notice("[src] seals its surgical instruments around [patient]."))
+	addtimer(CALLBACK(src, PROC_REF(finish_procedure), patient, surgical_payload), procedure_duration)
+	return TRUE
 
 /obj/machinery/sleeper/autodoc/proc/can_operate(mob/living/carbon/human/patient)
 	if(!patient || !surgical_payload || QDELETED(surgical_payload))
