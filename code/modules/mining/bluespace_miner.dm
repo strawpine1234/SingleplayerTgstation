@@ -32,6 +32,7 @@
 		/obj/item/stack/sheet/iron,
 		/obj/item/stack/sheet/iron,
 		/obj/item/stack/sheet/iron,
+		/obj/item/stack/sheet/plastic,
 		/obj/item/stack/sheet/glass,
 		/obj/item/stack/sheet/glass,
 		/obj/item/stack/sheet/mineral/plasma,
