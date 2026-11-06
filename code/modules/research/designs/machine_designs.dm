@@ -850,6 +850,15 @@
 	)
 	departmental_flags = DEPARTMENT_BITFLAG_CARGO | DEPARTMENT_BITFLAG_ENGINEERING
 
+/datum/design/board/bluespace_miner
+	name = "Bluespace Resource Miner Board"
+	desc = "Builds a bluespace miner that extracts mineral sheets in cold, pure plasma."
+	build_path = /obj/item/circuitboard/machine/bluespace_miner
+	category = list(
+		RND_CATEGORY_MACHINE + RND_SUBCATEGORY_MACHINE_CARGO
+	)
+	departmental_flags = DEPARTMENT_BITFLAG_CARGO | DEPARTMENT_BITFLAG_ENGINEERING
+
 /datum/design/board/stacking_machine
 	name = "Stacking Machine Board"
 	desc = "Used to build a stacking machine. Collects nearby materials and dispenses it in the ore silo."
