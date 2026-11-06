@@ -981,6 +981,7 @@ ADMIN_VERB(load_away_mission, R_FUN, "Load Away Mission", "Load a specific away 
 			active_ruins -= ruin_origin
 
 	// New unexplored areas give each level a fresh map generator and biome cache.
+	var/list/new_wastes_areas = list()
 	for(var/lava_z in lava_levels)
 		var/area/lavaland/surface/outdoors/unexplored/new_wastes = new
 		var/list/turf/to_reset = list()
@@ -1007,11 +1008,14 @@ ADMIN_VERB(load_away_mission, R_FUN, "Load Away Mission", "Load a specific away 
 		var/datum/map_generator/cave_generator/lavaland/new_generator = new
 		new_generator.runtime_rebuild = TRUE
 		new_wastes.map_generator = new_generator
-		new_wastes.RunTerrainGeneration()
+		new_wastes_areas += new_wastes
 
 	// Use the same ruin budgets and placement rules as initial map creation,
 	// but only for Lavaland. They are queued until after river generation.
 	seedRuins(lava_levels, CONFIG_GET(number/lavaland_budget), list(/area/lavaland/surface/outdoors/unexplored), themed_ruins[ZTRAIT_LAVA_RUINS], clear_below = TRUE, mineral_budget = 15, mineral_budget_update = OREGEN_PRESET_LAVALAND, ruins_type = ZTRAIT_LAVA_RUINS)
+
+	for(var/area/lavaland/surface/outdoors/unexplored/wastes in new_wastes_areas)
+		wastes.RunTerrainGeneration()
 
 	for(var/lava_z in lava_levels)
 		spawn_rivers(lava_z, 3, /turf/open/lava/smooth/lava_land_surface, /area/lavaland/surface/outdoors/unexplored)
