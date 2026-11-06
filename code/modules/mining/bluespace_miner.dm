@@ -13,6 +13,9 @@
 	var/production_progress = 0
 	var/selected_resource = null
 	var/auto_deposit = TRUE
+	var/mining_enabled = TRUE
+	var/total_produced = 0
+	var/list/production_counts = list()
 	var/status_message = "Idle"
 	/// Time required to produce a sheet, in seconds.
 	var/production_interval = 5
@@ -83,7 +86,7 @@
 	return ((total_moles - plasma_moles) / total_moles) <= max_impurity_fraction
 
 /obj/machinery/bluespace_miner/process(seconds_per_tick)
-	if(machine_stat & (BROKEN | NOPOWER) || !powered() || !atmosphere_is_valid())
+	if(!mining_enabled || machine_stat & (BROKEN | NOPOWER) || !powered() || !atmosphere_is_valid())
 		production_progress = 0
 		return
 
@@ -95,6 +98,9 @@
 	use_energy(active_power_usage * production_interval)
 	var/resource_type = selected_resource || pick(resource_types)
 	var/obj/item/stack/sheet/produced = new resource_type(drop_location())
+	total_produced++
+	var/resource_name = initial(resource_type:name)
+	production_counts[resource_name] = (production_counts[resource_name] || 0) + 1
 	if(auto_deposit && GLOB.ore_silo_default && GLOB.ore_silo_default.materials)
 		GLOB.ore_silo_default.materials.insert_item(produced)
 
@@ -103,27 +109,65 @@
 	. += span_notice("Requires at least [minimum_pressure] kPa of almost pure plasma below [maximum_temperature] K, plus electrical power.")
 	. += span_notice("Produces one mineral sheet every [production_interval] seconds while operating.")
 
-// A simple interactive control panel; a full TGUI frontend can replace this later.
-/obj/machinery/bluespace_miner/attack_hand(mob/living/user, list/modifiers)
+// Live machine interface.
+/obj/machinery/bluespace_miner/ui_interact(mob/user, datum/tgui/ui)
+	ui = SStgui.try_update_ui(user, src, ui)
+	if(!ui)
+		ui = new(user, src, "BluespaceMiner", name)
+		ui.open()
+
+/obj/machinery/bluespace_miner/ui_data(mob/user)
+	var/list/data = list()
+	var/turf/open/miner_turf = get_turf(src)
+	var/datum/gas_mixture/air
+	if(isopenturf(miner_turf))
+		air = miner_turf.return_air()
+	var/total_moles = air ? air.total_moles() : 0
+	var/plasma_moles = air ? air.moles[/datum/gas/plasma] : 0
+	data["enabled"] = mining_enabled
+	data["powered"] = powered() && !(machine_stat & (BROKEN | NOPOWER))
+	data["atmosphere_valid"] = atmosphere_is_valid()
+	data["temperature"] = air ? air.temperature : 0
+	data["pressure"] = air ? air.return_pressure() : 0
+	data["purity"] = total_moles > 0 ? 100 * plasma_moles / total_moles : 0
+	data["progress"] = production_progress
+	data["interval"] = production_interval
+	data["resource"] = selected_resource ? initial(selected_resource:name) : "Random"
+	data["resources"] = list()
+	var/list/seen_types = list()
+	for(var/resource_type in resource_types)
+		if(resource_type in seen_types)
+			continue
+		seen_types += resource_type
+		data["resources"] += list(list("name" = initial(resource_type:name), "path" = "[resource_type]"))
+	data["auto_deposit"] = auto_deposit
+	data["silo_connected"] = !!GLOB.ore_silo_default
+	data["total_produced"] = total_produced
+	data["power_usage"] = active_power_usage
+	data["production"] = production_counts
+	return data
+
+/obj/machinery/bluespace_miner/ui_act(action, list/params, datum/tgui/ui_state/state)
 	. = ..()
 	if(.)
 		return
-	var/list/options = list("Select resource", "Toggle silo deposit", "Check status")
-	var/choice = tgui_input_list(user, "Bluespace miner controls", name, options)
-	if(!choice || !Adjacent(user))
-		return
-	switch(choice)
-		if("Select resource")
-			var/list/choices = list("Random" = "Random")
-			for(var/resource_type in resource_types)
-				choices[initial(resource_type:name)] = resource_type
-			var/selection = tgui_input_list(user, "Choose output", name, choices)
-			if(!selection || !Adjacent(user))
-				return
-			selected_resource = choices[selection] == "Random" ? null : choices[selection]
-			to_chat(user, span_notice("Miner output: [selection]."))
-		if("Toggle silo deposit")
+	switch(action)
+		if("toggle_power")
+			mining_enabled = !mining_enabled
+			if(!mining_enabled)
+				production_progress = 0
+			return TRUE
+		if("toggle_silo")
 			auto_deposit = !auto_deposit
-			to_chat(user, span_notice("Silo deposit [auto_deposit ? "enabled" : "disabled"]."))
-		if("Check status")
-			to_chat(user, span_notice("Power: [powered() ? "available" : "unavailable"]. Atmosphere: [atmosphere_is_valid() ? "valid" : "invalid"]. Progress: [round(production_progress, 0.1)]/[production_interval] seconds."))
+			return TRUE
+		if("select_resource")
+			var/path = params["path"]
+			if(path == "Random")
+				selected_resource = null
+				return TRUE
+			var/resource_type = text2path(path)
+			if(!(resource_type in resource_types))
+				return FALSE
+			selected_resource = resource_type
+			return TRUE
+	return FALSE
