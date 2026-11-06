@@ -171,3 +171,30 @@
 			selected_resource = resource_type
 			return TRUE
 	return FALSE
+
+
+// Experimental Lavaland reset control, isolated to lavaland-reset-test.
+// This machine deliberately does not destroy turfs until a safe Lavaland
+// regeneration backend has been implemented and validated.
+/obj/machinery/lavaland_regenerator
+	name = "bluespace terraforming array"
+	desc = "An experimental controller for restoring Lavaland. Its regeneration core is not yet calibrated."
+	icon = 'icons/obj/machines/mining_machines.dmi'
+	icon_state = "console"
+	density = TRUE
+	anchored = TRUE
+	var/reset_in_progress = FALSE
+
+/obj/machinery/lavaland_regenerator/examine(mob/user)
+	. = ..()
+	. += span_warning("Experimental prototype: Lavaland regeneration is currently disabled.")
+
+/obj/machinery/lavaland_regenerator/attack_hand(mob/user, list/modifiers)
+	. = ..()
+	if(.)
+		return
+	if(reset_in_progress)
+		to_chat(user, span_warning("The array is already processing a regeneration request."))
+		return TRUE
+	to_chat(user, span_warning("The array's safety interlocks are active. Full Lavaland regeneration is not yet implemented; no terrain has been modified."))
+	return TRUE
