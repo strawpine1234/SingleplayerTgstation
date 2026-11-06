@@ -8,8 +8,6 @@
 
 /datum/map_generator/cave_generator
 	var/name = "Cave Generator"
-	/// Use ChangeTurf instead of startup-only direct turf construction when rebuilding mid-round.
-	var/runtime_rebuild = FALSE
 	///Weighted list of the types that spawns if the turf is open
 	var/weighted_open_turf_types = list(/turf/open/misc/asteroid/airless = 1)
 	///Expanded list of the types that spawns if the turf is open
@@ -165,7 +163,7 @@
 
 		// The assumption is this will be faster then changeturf, and changeturf isn't required since by this point
 		// The old tile hasn't got the chance to init yet
-		new_turf = runtime_rebuild ? gen_turf.ChangeTurf(new_turf) : new new_turf(gen_turf)
+		new_turf = new new_turf(gen_turf)
 
 		if(gen_turf.turf_flags & NO_RUINS)
 			new_turf.turf_flags |= NO_RUINS
@@ -252,7 +250,7 @@
 
 	for(var/biome in to_generate)
 		var/datum/biome/generating_biome = SSmapping.biomes[biome]
-		var/list/turf/generated_turfs = generating_biome.generate_turfs_for_terrain(to_generate[biome], runtime_rebuild)
+		var/list/turf/generated_turfs = generating_biome.generate_turfs_for_terrain(to_generate[biome])
 		generated_turfs_per_biome[biome] = (generated_turfs_per_biome[biome] || list()) + generated_turfs
 		var/list/area_list = generated_turfs_per_area_biome[biome]
 		if (!area_list)
