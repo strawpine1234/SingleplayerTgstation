@@ -10,6 +10,9 @@
 	active_power_usage = BASE_MACHINE_ACTIVE_CONSUMPTION * 2
 	/// Seconds of uninterrupted operation toward the next sheet.
 	var/production_progress = 0
+	var/selected_resource = null
+	var/auto_deposit = TRUE
+	var/status_message = "Idle"
 	/// Time required to produce a sheet, in seconds.
 	var/production_interval = 5
 	/// Lowest acceptable surrounding pressure, in kPa.
@@ -63,10 +66,37 @@
 
 	production_progress -= production_interval
 	use_energy(active_power_usage * production_interval)
-	var/resource_type = pick(resource_types)
-	new resource_type(drop_location())
+	var/resource_type = selected_resource || pick(resource_types)
+	var/obj/item/stack/sheet/produced = new resource_type(drop_location())
+	if(auto_deposit && GLOB.ore_silo_default && GLOB.ore_silo_default.materials)
+		GLOB.ore_silo_default.materials.insert_item(produced)
 
 /obj/machinery/bluespace_miner/examine(mob/user)
 	. = ..()
 	. += span_notice("Requires at least [minimum_pressure] kPa of almost pure plasma below [maximum_temperature] K, plus electrical power.")
 	. += span_notice("Produces one random mineral sheet every [production_interval] seconds while operating.")
+
+// A simple interactive control panel; a full TGUI frontend can replace this later.
+/obj/machinery/bluespace_miner/attack_hand(mob/living/user, list/modifiers)
+	. = ..()
+	if(.)
+		return
+	var/list/options = list("Select resource", "Toggle silo deposit", "Check status")
+	var/choice = tgui_input_list(user, "Bluespace miner controls", name, options)
+	if(!choice || !Adjacent(user))
+		return
+	switch(choice)
+		if("Select resource")
+			var/list/choices = list("Random" = "Random")
+			for(var/resource_type in resource_types)
+				choices[initial(resource_type:name)] = resource_type
+			var/selection = tgui_input_list(user, "Choose output", name, choices)
+			if(!selection || !Adjacent(user))
+				return
+			selected_resource = choices[selection] == "Random" ? null : choices[selection]
+			to_chat(user, span_notice("Miner output: [selection]."))
+		if("Toggle silo deposit")
+			auto_deposit = !auto_deposit
+			to_chat(user, span_notice("Silo deposit [auto_deposit ? "enabled" : "disabled"]."))
+		if("Check status")
+			to_chat(user, span_notice("Power: [powered() ? "available" : "unavailable"]. Atmosphere: [atmosphere_is_valid() ? "valid" : "invalid"]. Progress: [round(production_progress, 0.1)]/[production_interval] seconds."))
