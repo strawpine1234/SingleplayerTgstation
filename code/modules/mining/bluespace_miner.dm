@@ -173,28 +173,62 @@
 	return FALSE
 
 
-// Experimental Lavaland reset control, isolated to lavaland-reset-test.
-// This machine deliberately does not destroy turfs until a safe Lavaland
-// regeneration backend has been implemented and validated.
+// Lavaland regeneration controller. The destructive backend is intentionally locked
+// until the map generator can safely regenerate a live mining z-level.
 /obj/machinery/lavaland_regenerator
 	name = "bluespace terraforming array"
-	desc = "An experimental controller for restoring Lavaland. Its regeneration core is not yet calibrated."
+	desc = "A bluespace control array intended to rebuild the Lavaland expedition zone."
 	icon = 'icons/obj/machines/mining_machines.dmi'
 	icon_state = "console"
 	density = TRUE
 	anchored = TRUE
+	idle_power_usage = BASE_MACHINE_IDLE_CONSUMPTION
+	active_power_usage = BASE_MACHINE_ACTIVE_CONSUMPTION
 	var/reset_in_progress = FALSE
+	var/reset_count = 0
+	var/last_request = "No regeneration requests have been made."
+	var/last_requester = "None"
+	var/last_request_time = 0
+	var/static/list/reset_safety_requirements = list(
+		"No living players or observers in the regeneration zone",
+		"No occupied shuttles, mining bases, or protected landmarks",
+		"Clean removal of old ruins, mobs, objects, and map references",
+		"Fresh terrain, ore, fauna, ruin, and boss generation",
+		"Safe reconnection of mining destinations and z-level metadata",
+	)
 
 /obj/machinery/lavaland_regenerator/examine(mob/user)
 	. = ..()
-	. += span_warning("Experimental prototype: Lavaland regeneration is currently disabled.")
+	. += span_warning("The full-reset backend is not yet certified. Regeneration is locked to prevent world corruption.")
 
-/obj/machinery/lavaland_regenerator/attack_hand(mob/user, list/modifiers)
+/obj/machinery/lavaland_regenerator/ui_interact(mob/user, datum/tgui/ui)
+	ui = SStgui.try_update_ui(user, src, ui)
+	if(!ui)
+		ui = new(user, src, "LavalandRegenerator", name)
+		ui.open()
+
+/obj/machinery/lavaland_regenerator/ui_data(mob/user)
+	var/list/data = list()
+	data["powered"] = powered() && !(machine_stat & (BROKEN | NOPOWER))
+	data["busy"] = reset_in_progress
+	data["backend_ready"] = FALSE
+	data["reset_count"] = reset_count
+	data["last_request"] = last_request
+	data["last_requester"] = last_requester
+	data["last_request_time"] = last_request_time
+	data["requirements"] = reset_safety_requirements
+	return data
+
+/obj/machinery/lavaland_regenerator/ui_act(action, list/params, datum/tgui/ui, datum/ui_state/state)
 	. = ..()
 	if(.)
 		return
-	if(reset_in_progress)
-		to_chat(user, span_warning("The array is already processing a regeneration request."))
+	if(action == "request_reset")
+		if(reset_in_progress)
+			return FALSE
+		last_requester = "[usr]"
+		last_request_time = world.time
+		last_request = "Denied: the live Lavaland regeneration backend is not implemented."
+		to_chat(usr, span_warning("Safety interlock: Lavaland cannot be regenerated until the live map reset backend is implemented and verified."))
 		return TRUE
-	to_chat(user, span_warning("The array's safety interlocks are active. Full Lavaland regeneration is not yet implemented; no terrain has been modified."))
-	return TRUE
+	return FALSE
