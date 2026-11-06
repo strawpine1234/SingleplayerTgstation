@@ -147,7 +147,7 @@
 	data["production"] = production_counts
 	return data
 
-/obj/machinery/bluespace_miner/ui_act(action, list/params, datum/tgui/ui_state/state)
+/obj/machinery/bluespace_miner/ui_act(action, list/params, datum/tgui/ui, datum/ui_state/state)
 	. = ..()
 	if(.)
 		return
