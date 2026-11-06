@@ -184,3 +184,17 @@
 		/datum/material/iron = SHEET_MATERIAL_AMOUNT * 3,
 	)
 	crafting_flags = CRAFT_ON_SOLID_GROUND
+
+
+// Craft a reusable summoning altar directly from the personal crafting menu.
+/datum/crafting_recipe/megafauna_altar
+	name = "Megafauna Summoning Altar"
+	desc = "Construct an altar that can summon a selected megafauna for a boss fight."
+	result = /obj/structure/megafauna_altar
+	time = 10 SECONDS
+	reqs = list(
+		/obj/item/stack/sheet/iron = 5,
+		/obj/item/stack/sheet/glass = 5,
+		/obj/item/stack/ore/bluespace_crystal = 2,
+	)
+	category = CAT_STRUCTURE
