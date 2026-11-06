@@ -5280,6 +5280,7 @@
 #include "code\modules\minimap\hud\minimap_tracking_blip.dm"
 #include "code\modules\mining\aux_base.dm"
 #include "code\modules\mining\fulton.dm"
+#include "code\modules\mining\bluespace_miner.dm"
 #include "code\modules\mining\machine_processing.dm"
 #include "code\modules\mining\machine_redemption.dm"
 #include "code\modules\mining\machine_silo.dm"
