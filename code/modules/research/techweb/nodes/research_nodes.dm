@@ -33,6 +33,7 @@
 	description = "With a heightened grasp of bluespace dynamics, sophisticated applications and technologies can be devised using data from bluespace crystal analyses."
 	prerequisite_nodes = list(/datum/techweb_node/bluespace_theory)
 	unlocked_designs = list(
+		/datum/design/board/bluespace_miner,
 		/datum/design/board/ore_silo,
 		/datum/design/miningsatchel_holding,
 		/datum/design/board/plumbing_receiver,
