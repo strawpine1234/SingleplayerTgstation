@@ -6,6 +6,7 @@
 	icon_state = "console"
 	density = TRUE
 	anchored = TRUE
+	circuit = /obj/item/circuitboard/machine/bluespace_miner
 	idle_power_usage = BASE_MACHINE_IDLE_CONSUMPTION
 	active_power_usage = BASE_MACHINE_ACTIVE_CONSUMPTION * 2
 	/// Seconds of uninterrupted operation toward the next sheet.
@@ -51,6 +52,16 @@
 		if(4)
 			production_interval = 1
 	production_progress = min(production_progress, production_interval)
+
+/obj/machinery/bluespace_miner/RefreshParts()
+	. = ..()
+	var/total_rating = 0
+	var/number_of_bins = 0
+	for(var/datum/stock_part/matter_bin/bin in component_parts)
+		total_rating += bin.tier
+		number_of_bins++
+	if(number_of_bins)
+		set_parts_tier(round(total_rating / number_of_bins))
 
 /obj/machinery/bluespace_miner/proc/atmosphere_is_valid()
 	var/turf/open/miner_turf = get_turf(src)
