@@ -1466,6 +1466,16 @@
 	greyscale_colors = CIRCUIT_COLOR_SUPPLY
 	build_path = /obj/machinery/rnd/production/protolathe/department/cargo
 
+/obj/item/circuitboard/machine/bluespace_miner
+	name = "Bluespace Resource Miner"
+	greyscale_colors = CIRCUIT_COLOR_SUPPLY
+	build_path = /obj/machinery/bluespace_miner
+	req_components = list(
+		/datum/stock_part/matter_bin = 4,
+		/datum/stock_part/servo = 2,
+		/datum/stock_part/micro_laser = 3,
+		/datum/stock_part/scanning_module = 1)
+
 /obj/item/circuitboard/machine/stacking_machine
 	name = "Stacking Machine"
 	greyscale_colors = CIRCUIT_COLOR_SUPPLY
