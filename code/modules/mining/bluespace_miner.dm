@@ -2,8 +2,8 @@
 /obj/machinery/bluespace_miner
 	name = "bluespace resource miner"
 	desc = "A bluespace extractor that produces mineral sheets when immersed in cold, pure plasma."
-	icon = 'icons/obj/machines/mining_machines.dmi'
-	icon_state = "console"
+	icon = 'icons/obj/machines/bluespace_miner.dmi'
+	icon_state = "bluespace_miner"
 	density = TRUE
 	anchored = TRUE
 	circuit = /obj/item/circuitboard/machine/bluespace_miner
