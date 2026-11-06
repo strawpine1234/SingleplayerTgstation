@@ -199,7 +199,7 @@
 
 /obj/machinery/lavaland_regenerator/examine(mob/user)
 	. = ..()
-	. += span_warning("The full-reset backend is not yet certified. Regeneration is locked to prevent world corruption.")
+	. += span_warning("Experimental regeneration enabled. Back up your world before using.")
 
 /obj/machinery/lavaland_regenerator/ui_interact(mob/user, datum/tgui/ui)
 	ui = SStgui.try_update_ui(user, src, ui)
@@ -211,7 +211,7 @@
 	var/list/data = list()
 	data["powered"] = powered() && !(machine_stat & (BROKEN | NOPOWER))
 	data["busy"] = reset_in_progress
-	data["backend_ready"] = FALSE
+	data["backend_ready"] = TRUE
 	data["reset_count"] = reset_count
 	data["last_request"] = last_request
 	data["last_requester"] = last_requester
@@ -224,11 +224,18 @@
 	if(.)
 		return
 	if(action == "request_reset")
-		if(reset_in_progress)
+		if(reset_in_progress || !powered())
 			return FALSE
+		reset_in_progress = TRUE
 		last_requester = "[usr]"
 		last_request_time = world.time
-		last_request = "Denied: the live Lavaland regeneration backend is not implemented."
-		to_chat(usr, span_warning("Safety interlock: Lavaland cannot be regenerated until the live map reset backend is implemented and verified."))
+		last_request = "Regenerating Lavaland..."
+		var/success = SSmapping.regenerate_lavaland_experimental()
+		if(success)
+			reset_count++
+			last_request = "Generation stages completed."
+		else
+			last_request = "No Lavaland level available."
+		reset_in_progress = FALSE
 		return TRUE
 	return FALSE
