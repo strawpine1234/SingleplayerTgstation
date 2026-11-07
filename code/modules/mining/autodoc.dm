@@ -1,18 +1,20 @@
 // Autonomous surgical capsule for singleplayer use.
 // Accepts a bodypart, organ, implant case, or filled implanter.
-// Performs a replacement/installation after ten seconds.
+// Servo upgrades speed up replacement, installation, and implant removal.
 /obj/machinery/sleeper/autodoc
 	name = "autodoc"
-	desc = "An automated surgical capsule. Insert an organ, replacement limb, or loaded implant case/implanter, then enter and activate the ten-second procedure."
+	desc = "An automated surgical capsule. Insert an organ, replacement limb, or loaded implant case/implanter, then enter and activate the procedure. Upgraded servos speed up surgery."
 	icon = 'icons/obj/machines/sleeper.dmi'
 	icon_state = "sleeper"
 	base_icon_state = "sleeper"
 	controls_inside = TRUE
 	deconstructable = TRUE
+	circuit = /obj/item/circuitboard/machine/sleeper/autodoc
 	/// The item stored for the next procedure.
 	var/obj/item/surgical_payload
-	/// True between starting and finishing the ten-second procedure.
+	/// True between starting and finishing a procedure.
 	var/operating = FALSE
+	/// Procedure time at the current servo tier; ten seconds with basic parts.
 	var/procedure_duration = 10 SECONDS
 	var/status_text = "Ready for a surgical payload."
 	/// Sound played only while a procedure is active.
@@ -34,7 +36,26 @@
 /obj/machinery/sleeper/autodoc/examine(mob/user)
 	. = ..()
 	. += span_notice("Use a limb, organ, filled implanter, or implant case on [src] to load it.")
-	. += span_notice("Click the chamber to manage the payload, enter it, or begin the ten-second procedure.")
+	. += span_notice("Click the chamber to manage the payload, enter it, or begin a procedure.")
+	. += span_notice("Current procedure time: [round(procedure_duration / (1 SECONDS), 0.1)] seconds. Upgrade the servo to operate faster.")
+	. += span_notice("Close the empty chamber, then use a screwdriver to open its maintenance hatch. Use a part replacer to upgrade it or a crowbar to disassemble it.")
+
+/// Recalculate speed from installed parts, including after construction or RPED upgrades.
+/obj/machinery/sleeper/autodoc/RefreshParts()
+	. = ..()
+	var/servo_rating = 1
+	for(var/datum/stock_part/servo/servo in component_parts)
+		servo_rating = max(servo_rating, servo.tier)
+	procedure_duration = initial(procedure_duration) / servo_rating
+
+/obj/machinery/sleeper/autodoc/exchange_parts(mob/user, obj/item/storage/part_replacer/replacer_tool)
+	if(operating)
+		to_chat(user, span_warning("Wait for [src] to finish operating before replacing its parts."))
+		return FALSE
+	return ..()
+
+/obj/machinery/sleeper/autodoc/can_crowbar_deconstruct()
+	return !operating && !occupant && ..()
 
 /obj/machinery/sleeper/autodoc/proc/get_implant()
 	if(istype(surgical_payload, /obj/item/implanter))
@@ -92,7 +113,7 @@
 	data["operating"] = operating
 	data["open"] = state_open
 	data["status"] = status_text
-	data["duration"] = procedure_duration / (1 SECONDS)
+	data["duration"] = round(procedure_duration / (1 SECONDS), 0.1)
 	return data
 
 /obj/machinery/sleeper/autodoc/ui_act(action, list/params, datum/tgui/ui, datum/ui_state/state)
@@ -127,7 +148,7 @@
 
 /// Start a timed installation or removal of all injected implants.
 /obj/machinery/sleeper/autodoc/proc/begin_surgery(remove_implants = FALSE)
-	if(operating || state_open || !ishuman(occupant) || !is_operational)
+	if(operating || state_open || panel_open || !ishuman(occupant) || !is_operational)
 		return FALSE
 	var/mob/living/carbon/human/patient = occupant
 	if(remove_implants && !length(patient.implants))
@@ -139,7 +160,7 @@
 		return FALSE
 	operating = TRUE
 	operating_sound.start()
-	status_text = "Surgery in progress (10 seconds)."
+	status_text = "Surgery in progress ([round(procedure_duration / (1 SECONDS), 0.1)] seconds)."
 	visible_message(span_notice("[src] seals its surgical instruments around [patient]."))
 	procedure_timer = addtimer(CALLBACK(src, PROC_REF(finish_procedure), patient, surgical_payload, remove_implants), procedure_duration, TIMER_STOPPABLE)
 	return TRUE

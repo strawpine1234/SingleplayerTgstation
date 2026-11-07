@@ -279,6 +279,15 @@
 	)
 	departmental_flags = DEPARTMENT_BITFLAG_ENGINEERING | DEPARTMENT_BITFLAG_SCIENCE
 
+/datum/design/board/autodoc
+	name = "Autodoc Board"
+	desc = "Used to build an automated surgical capsule. Upgraded servos shorten its procedures."
+	build_path = /obj/item/circuitboard/machine/sleeper/autodoc
+	category = list(
+		RND_CATEGORY_MACHINE + RND_SUBCATEGORY_MACHINE_MEDICAL
+	)
+	departmental_flags = DEPARTMENT_BITFLAG_ENGINEERING | DEPARTMENT_BITFLAG_MEDICAL
+
 /datum/design/board/cryotube
 	name = "Cryotube Board"
 	desc = "Used to build a cryotube, a machine often used in conjunction with cryoxadone for advanced medical treatments."

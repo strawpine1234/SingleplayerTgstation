@@ -929,6 +929,11 @@
 		/obj/item/stack/cable_coil = 1,
 		/obj/item/stack/sheet/glass = 2)
 
+/// Uses sleeper components, but reconstructs an Autodoc instead of a regular sleeper.
+/obj/item/circuitboard/machine/sleeper/autodoc
+	name = "Autodoc"
+	build_path = /obj/machinery/sleeper/autodoc
+
 /obj/item/circuitboard/machine/sleeper/syndie
 	build_path = /obj/machinery/sleeper/syndie
 
