@@ -186,6 +186,7 @@
 #include "emoting.dm"
 #include "emp_flashlight.dm"
 #include "ethereal_revival.dm"
+#include "expedition_console.dm"
 #include "explosion_action.dm"
 #include "firedoor_regions.dm"
 #include "fish_unit_tests.dm"

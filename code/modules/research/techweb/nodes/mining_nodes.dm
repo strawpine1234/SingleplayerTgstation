@@ -12,6 +12,7 @@
 		/datum/design/board/stacking_machine,
 		/datum/design/board/stacking_unit_console,
 		/datum/design/board/autolathe,
+		/datum/design/board/expedition,
 		/datum/design/material/rglass,
 		/datum/design/alloy/plaglass,
 		/datum/design/alloy/plasmarglass,

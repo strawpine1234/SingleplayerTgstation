@@ -1,0 +1,402 @@
+/// One round-wide board: rebuilding a console cannot reset a mission or duplicate rewards.
+GLOBAL_DATUM_INIT(solo_expeditions, /datum/solo_expedition_board, new)
+
+/// Three offers and one active expedition, shared by all expedition consoles.
+/datum/solo_expedition_board
+	/// Current randomized offers.
+	var/list/offers = list()
+	/// Accepted offer, if any.
+	var/datum/solo_expedition/active
+	/// Monotonic offer identifier; stale UI actions cannot select replacement offers.
+	var/serial = 0
+	/// Earliest time another expedition can be accepted after abandonment.
+	var/next_start = 0
+	/// Number of rewards successfully claimed this round.
+	var/completed = 0
+	/// Most recent board feedback.
+	var/status = "Choose an expedition. Bring mining protection, a GPS, and a way home."
+
+/datum/solo_expedition_board/New()
+	. = ..()
+	roll_offers()
+
+/datum/solo_expedition_board/Destroy()
+	active = null
+	QDEL_LIST(offers)
+	return ..()
+
+/// Replace spent offers with one survey, salvage, and hunt in random order.
+/datum/solo_expedition_board/proc/roll_offers()
+	if(active)
+		return FALSE
+	QDEL_LIST(offers)
+	offers = list()
+	for(var/kind in shuffle(list("survey", "salvage", "hunt")))
+		serial++
+		var/datum/solo_expedition/mission = new(kind, "[serial]")
+		offers += mission
+	return TRUE
+
+/// Accept only a current offer, and deploy it before advertising a destination.
+/datum/solo_expedition_board/proc/accept_offer(id)
+	if(active || world.time < next_start)
+		return FALSE
+	for(var/datum/solo_expedition/mission as anything in offers)
+		if(mission.id != id)
+			continue
+		active = mission
+		if(!mission.deploy())
+			active = null
+			status = "No clear mining wilderness site found. Try again after the mining map has loaded."
+			return FALSE
+		status = "Expedition accepted. Follow the GPS signal [mission.gps_tag], then return here for your reward."
+		return TRUE
+	return FALSE
+
+/// Abandon and clean up only expedition-owned objects, with a cooldown against reroll spam.
+/datum/solo_expedition_board/proc/abandon(id)
+	if(!active || active.id != id)
+		return FALSE
+	active = null
+	next_start = world.time + 1 MINUTES
+	roll_offers()
+	status = "Expedition abandoned. New departures available in one minute."
+	return TRUE
+
+/// Claim exactly one server-defined reward, retiring the offer before spawning anything.
+/datum/solo_expedition_board/proc/claim(id, reward, turf/delivery_turf)
+	if(!active || active.id != id || active.state != "complete" || !delivery_turf)
+		return FALSE
+	if(!(reward in list("credits", "medical", "parts")))
+		return FALSE
+	var/credits = active.credits
+	var/difficulty = active.difficulty
+	active.state = "claimed"
+	active = null
+	completed++
+	switch(reward)
+		if("credits")
+			new /obj/item/holochip(delivery_turf, credits)
+		if("medical")
+			new /obj/item/storage/medkit/advanced(delivery_turf)
+			new /obj/item/storage/medkit/regular(delivery_turf)
+		if("parts")
+			if(difficulty >= 3)
+				new /obj/item/stock_parts/servo/pico(delivery_turf)
+			else
+				new /obj/item/stock_parts/servo/nano(delivery_turf)
+	roll_offers()
+	status = "Reward delivered. Three new expeditions are available."
+	return TRUE
+
+/// A generated wilderness objective and the objects that belong exclusively to it.
+/datum/solo_expedition
+	/// Unique offer identifier, supplied by the board.
+	var/id
+	/// Survey, salvage, or hunt.
+	var/kind
+	/// Offer title.
+	var/title
+	/// Player-facing objective instructions.
+	var/description
+	/// Difficulty from one to three.
+	var/difficulty
+	/// Credit option for this offer.
+	var/credits
+	/// Duration of the on-site interaction.
+	var/work_time
+	/// Lifecycle: offered, active, complete, failed, or claimed.
+	var/state = "offered"
+	/// Unique GPS signal for the deployed site.
+	var/gps_tag
+	/// Deployed objective beacon.
+	var/obj/structure/expedition_beacon/beacon
+	/// All mission-owned fauna, retained for cleanup.
+	var/list/guards = list()
+	/// Fauna whose deaths have not yet been verified.
+	var/list/living_guards = list()
+	/// Recovered evidence; only this exact object can complete a salvage contract.
+	var/obj/item/expedition_evidence/evidence
+	/// Number of verified target deaths.
+	var/kills = 0
+	/// Number of fauna originally deployed.
+	var/target_count = 0
+
+/datum/solo_expedition/New(mission_kind, mission_id)
+	. = ..()
+	kind = mission_kind
+	id = mission_id
+	difficulty = rand(1, 3)
+	credits = 500 + difficulty * 500
+	work_time = (10 + difficulty * 5) SECONDS
+	gps_tag = "EXP-[id]"
+	var/site_name = pick("Cinder", "Echo", "Horizon", "Pioneer", "Wayfarer", "Prospector")
+	switch(kind)
+		if("survey")
+			title = "[site_name] geological survey"
+			description = "Reach the beacon and remain beside it while collecting a geological survey. Return to a console afterward. No additional guards are deployed; native wildlife and weather remain dangerous."
+		if("salvage")
+			title = "Recover the [site_name] flight recorder"
+			description = "Reach the guarded beacon and extract its flight recorder. Bring the recorder back and use it on an expedition console. You may evade the guards."
+		if("hunt")
+			title = "[site_name] fauna suppression"
+			description = "Kill the marked expedition fauna, then interact with the beacon to verify the site. Return to a console afterward. Only these assigned targets count."
+
+/datum/solo_expedition/Destroy()
+	// Unregister first: deleting targets during cleanup must not report failure or kills.
+	for(var/mob/living/guard as anything in guards)
+		if(!QDELETED(guard))
+			UnregisterSignal(guard, list(COMSIG_LIVING_DEATH, COMSIG_QDELETING))
+	QDEL_LIST(guards)
+	living_guards = null
+	if(beacon)
+		beacon.mission = null
+	QDEL_NULL(beacon)
+	if(evidence)
+		evidence.mission = null
+	QDEL_NULL(evidence)
+	return ..()
+
+/// Only natural, clear mining terrain outside ruin interiors and base areas is eligible.
+/datum/solo_expedition/proc/valid_site_turf(turf/candidate)
+	if(!isasteroidturf(candidate) || candidate.is_blocked_turf())
+		return FALSE
+	var/area/site_area = get_area(candidate)
+	return istype(site_area, /area/lavaland/surface/outdoors/unexplored) || istype(site_area, /area/icemoon/underground/unexplored)
+
+/// Bounded random search; never modifies existing terrain, buildings, or lava.
+/datum/solo_expedition/proc/find_site()
+	var/list/mining_levels = SSmapping.levels_by_trait(ZTRAIT_MINING)
+	if(!length(mining_levels) || world.maxx < 50 || world.maxy < 50)
+		return null
+	for(var/attempt in 1 to 500)
+		var/turf/center = locate(rand(20, world.maxx - 20), rand(20, world.maxy - 20), pick(mining_levels))
+		if(!valid_site_turf(center))
+			continue
+		var/valid = TRUE
+		for(var/turf/nearby in range(1, center))
+			if(!valid_site_turf(nearby))
+				valid = FALSE
+				break
+		if(!valid)
+			continue
+		for(var/obj/machinery/nearby_machine in range(10, center))
+			valid = FALSE
+			break
+		for(var/mob/living/nearby_mob in range(10, center))
+			valid = FALSE
+			break
+		if(valid)
+			return center
+	return null
+
+/// Deploy a beacon and a randomized encounter only after a safe site is found.
+/datum/solo_expedition/proc/deploy()
+	if(state != "offered")
+		return FALSE
+	var/turf/site = find_site()
+	if(!site)
+		return FALSE
+	state = "active"
+	beacon = new(site, src)
+	if(kind == "survey")
+		return TRUE
+	target_count = difficulty + (kind == "hunt" ? 1 : 0)
+	var/list/spawn_turfs = list()
+	for(var/turf/candidate in orange(1, site))
+		spawn_turfs += candidate
+	var/ice_site = istype(get_area(site), /area/icemoon)
+	for(var/index in 1 to target_count)
+		var/mob_type = ice_site ? /mob/living/basic/mining/wolf : pick(/mob/living/basic/mining/watcher, /mob/living/basic/mining/goliath)
+		var/mob/living/guard = new mob_type(pick_n_take(spawn_turfs))
+		guard.name = "[guard.name] ([gps_tag])"
+		guards += guard
+		living_guards += guard
+		RegisterSignal(guard, COMSIG_LIVING_DEATH, PROC_REF(target_died))
+		RegisterSignal(guard, COMSIG_QDELETING, PROC_REF(target_deleted))
+	return TRUE
+
+/// Count a target at most once, including creatures that delete themselves after death.
+/datum/solo_expedition/proc/target_died(mob/living/source, gibbed)
+	SIGNAL_HANDLER
+	if(!(source in living_guards))
+		return
+	living_guards -= source
+	kills++
+	UnregisterSignal(source, list(COMSIG_LIVING_DEATH, COMSIG_QDELETING))
+
+/// A missing live hunt target is a failure, never a free kill (e.g. a mining map reset).
+/datum/solo_expedition/proc/target_deleted(mob/living/source)
+	SIGNAL_HANDLER
+	living_guards -= source
+	guards -= source
+	if(kind == "hunt" && state == "active")
+		state = "failed"
+
+/// Serialize only player-facing data; no client-provided reward values or completion states.
+/datum/solo_expedition/proc/ui_data()
+	var/turf/site = get_turf(beacon)
+	return list(
+		"id" = id,
+		"kind" = kind,
+		"title" = title,
+		"description" = description,
+		"difficulty" = difficulty,
+		"credits" = credits,
+		"work_seconds" = work_time / (1 SECONDS),
+		"state" = state,
+		"gps" = gps_tag,
+		"coordinates" = site ? "[site.x], [site.y], [site.z]" : null,
+		"kills" = kills,
+		"targets" = target_count,
+		"recovered" = !isnull(evidence),
+		"parts" = difficulty >= 3 ? "Pico servo (tier 3)" : "Nano servo (tier 2)",
+	)
+
+/// In-world objective; the mission owns its lifetime and GPS component.
+/obj/structure/expedition_beacon
+	name = "expedition beacon"
+	desc = "A remote expedition instrument. Interact with it to perform the assigned field work."
+	icon = 'icons/obj/devices/tracker.dmi'
+	icon_state = "gps-c"
+	anchored = TRUE
+	density = FALSE
+	max_integrity = 200
+	/// Owning expedition.
+	var/datum/solo_expedition/mission
+	/// Prevent concurrent field-work interactions from producing duplicate evidence.
+	var/working = FALSE
+
+/obj/structure/expedition_beacon/Initialize(mapload, datum/solo_expedition/owner)
+	. = ..()
+	mission = owner
+	if(mission)
+		name = "expedition beacon ([mission.gps_tag])"
+		AddComponent(/datum/component/gps, mission.gps_tag)
+	set_light(2, 1, LIGHT_COLOR_BLUE)
+
+/obj/structure/expedition_beacon/Destroy()
+	if(mission)
+		mission.beacon = null
+		if(mission.state == "active" && !mission.evidence)
+			mission.state = "failed"
+	mission = null
+	return ..()
+
+/obj/structure/expedition_beacon/examine(mob/user)
+	. = ..()
+	if(mission)
+		. += span_notice(mission.description)
+		. += span_notice("Assigned fauna eliminated: [mission.kills]/[mission.target_count].")
+
+/obj/structure/expedition_beacon/attack_hand(mob/living/user, list/modifiers)
+	. = ..()
+	if(.)
+		return
+	if(!mission || mission.state != "active" || working || !ishuman(user) || !user.can_perform_action(src))
+		return
+	if(mission.kind == "hunt" && mission.kills < mission.target_count)
+		balloon_alert(user, "assigned fauna still alive!")
+		return
+	if(mission.evidence)
+		balloon_alert(user, "recorder already recovered!")
+		return
+	working = TRUE
+	balloon_alert(user, "performing field work...")
+	var/finished = do_after(user, mission.work_time, target = src)
+	if(QDELETED(src))
+		return
+	working = FALSE
+	if(!finished || !mission || mission.state != "active")
+		return
+	if(mission.kind == "salvage")
+		mission.evidence = new /obj/item/expedition_evidence(drop_location(), mission)
+		user.put_in_hands(mission.evidence)
+		to_chat(user, span_notice("Recorder recovered. Use it on an expedition console to submit it."))
+	else
+		mission.state = "complete"
+		to_chat(user, span_notice("Field work complete. Return to an expedition console and choose your reward."))
+
+/// Unique salvage proof, bound to one offer and consumed when submitted.
+/obj/item/expedition_evidence
+	name = "expedition flight recorder"
+	desc = "A recovered flight recorder. Submit it by using it on an expedition console."
+	icon = 'icons/obj/devices/tracker.dmi'
+	icon_state = "gps-c"
+	w_class = WEIGHT_CLASS_SMALL
+	/// Owning expedition, cleared before intentional deletion.
+	var/datum/solo_expedition/mission
+
+/obj/item/expedition_evidence/Initialize(mapload, datum/solo_expedition/owner)
+	. = ..()
+	mission = owner
+	if(mission)
+		name = "flight recorder ([mission.gps_tag])"
+
+/obj/item/expedition_evidence/Destroy()
+	if(mission)
+		mission.evidence = null
+		if(mission.state == "active")
+			mission.state = "failed"
+	mission = null
+	return ..()
+
+/// Buildable console for accepting expeditions and collecting one reward on return.
+/obj/machinery/computer/expedition
+	name = "expedition mission console"
+	desc = "Offers remote mining-planet expeditions with a choice of rewards. Bring a GPS, appropriate protection, and transport."
+	circuit = /obj/item/circuitboard/computer/expedition
+
+/obj/machinery/computer/expedition/ui_interact(mob/user, datum/tgui/ui)
+	ui = SStgui.try_update_ui(user, src, ui)
+	if(!ui)
+		ui = new(user, src, "ExpeditionConsole", name)
+		ui.open()
+
+/obj/machinery/computer/expedition/ui_data(mob/user)
+	var/datum/solo_expedition_board/board = GLOB.solo_expeditions
+	var/list/data = list("status" = board.status, "completed" = board.completed)
+	data["cooldown"] = max(0, ceil((board.next_start - world.time) / (1 SECONDS)))
+	data["active"] = board.active?.ui_data()
+	var/list/offers = list()
+	for(var/datum/solo_expedition/mission as anything in board.offers)
+		offers += list(mission.ui_data())
+	data["offers"] = offers
+	return data
+
+/obj/machinery/computer/expedition/ui_act(action, list/params, datum/tgui/ui, datum/ui_state/state)
+	. = ..()
+	if(.)
+		return
+	if(!is_operational || !ishuman(usr) || !usr.can_perform_action(src))
+		return FALSE
+	var/datum/solo_expedition_board/board = GLOB.solo_expeditions
+	switch(action)
+		if("accept")
+			board.accept_offer(params["id"])
+			return TRUE
+		if("abandon")
+			return board.abandon(params["id"])
+		if("claim")
+			return board.claim(params["id"], params["reward"], drop_location())
+	return FALSE
+
+/obj/machinery/computer/expedition/item_interaction(mob/living/user, obj/item/tool, list/modifiers)
+	if(!istype(tool, /obj/item/expedition_evidence))
+		return ..()
+	if(!is_operational || !user.can_perform_action(src))
+		return ITEM_INTERACT_BLOCKING
+	var/obj/item/expedition_evidence/recorder = tool
+	var/datum/solo_expedition/mission = GLOB.solo_expeditions.active
+	if(!mission || mission.state != "active" || recorder != mission.evidence || recorder.mission != mission)
+		balloon_alert(user, "not the assigned recorder!")
+		return ITEM_INTERACT_BLOCKING
+	if(!user.transferItemToLoc(recorder, src))
+		return ITEM_INTERACT_BLOCKING
+	mission.state = "complete"
+	mission.evidence = null
+	recorder.mission = null
+	qdel(recorder)
+	GLOB.solo_expeditions.status = "Flight recorder submitted. Choose your expedition reward."
+	to_chat(user, span_notice("Flight recorder submitted. Open the console to choose your reward."))
+	return ITEM_INTERACT_SUCCESS
