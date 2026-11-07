@@ -234,7 +234,7 @@ GLOBAL_DATUM_INIT(solo_expeditions, /datum/solo_expedition_board, new)
 		state = "failed"
 
 /// Serialize only player-facing data; no client-provided reward values or completion states.
-/datum/solo_expedition/proc/ui_data()
+/datum/solo_expedition/proc/get_mission_data()
 	var/turf/site = get_turf(beacon)
 	return list(
 		"id" = id,
@@ -357,10 +357,10 @@ GLOBAL_DATUM_INIT(solo_expeditions, /datum/solo_expedition_board, new)
 	var/datum/solo_expedition_board/board = GLOB.solo_expeditions
 	var/list/data = list("status" = board.status, "completed" = board.completed)
 	data["cooldown"] = max(0, ceil((board.next_start - world.time) / (1 SECONDS)))
-	data["active"] = board.active?.ui_data()
+	data["active"] = board.active?.get_mission_data()
 	var/list/offers = list()
 	for(var/datum/solo_expedition/mission as anything in board.offers)
-		offers += list(mission.ui_data())
+		offers += list(mission.get_mission_data())
 	data["offers"] = offers
 	return data
 
