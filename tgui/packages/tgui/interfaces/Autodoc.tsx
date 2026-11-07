@@ -10,14 +10,23 @@ type Data = {
   open: boolean;
   status: string;
   duration: number;
+  healing_duration: number;
 };
 
 export const Autodoc = () => {
   const { act, data } = useBackend<Data>();
-  const { patient, payload, operating, open, status, duration } = data;
+  const {
+    patient,
+    payload,
+    operating,
+    open,
+    status,
+    duration,
+    healing_duration,
+  } = data;
 
   return (
-    <Window width={460} height={430} title="Autodoc">
+    <Window width={460} height={490} title="Autodoc">
       <Window.Content>
         <Stack vertical fill>
           <Stack.Item>
@@ -101,6 +110,20 @@ export const Autodoc = () => {
                 onClick={() => act('remove_implants')}
               >
                 Remove All Implants
+              </Button>
+              <Box mt={1} color="label">
+                Healing repairs body and organ damage in {healing_duration}{' '}
+                seconds, twice the normal procedure time.
+              </Box>
+              <Button
+                fluid
+                mt={1}
+                icon="briefcase-medical"
+                color="blue"
+                disabled={operating || !patient || open}
+                onClick={() => act('heal_damage')}
+              >
+                Heal All Damage ({healing_duration}s)
               </Button>
               <Box mt={1} color="label">
                 An implant is installed, an organ is replaced in its slot, or a

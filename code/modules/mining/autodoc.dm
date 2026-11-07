@@ -114,6 +114,7 @@
 	data["open"] = state_open
 	data["status"] = status_text
 	data["duration"] = round(procedure_duration / (1 SECONDS), 0.1)
+	data["healing_duration"] = round(get_procedure_duration(heal_damage = TRUE) / (1 SECONDS), 0.1)
 	return data
 
 /obj/machinery/sleeper/autodoc/ui_act(action, list/params, datum/tgui/ui, datum/ui_state/state)
@@ -144,25 +145,34 @@
 			return begin_surgery()
 		if("remove_implants")
 			return begin_surgery(remove_implants = TRUE)
+		if("heal_damage")
+			return begin_surgery(heal_damage = TRUE)
 	return FALSE
 
-/// Start a timed installation or removal of all injected implants.
-/obj/machinery/sleeper/autodoc/proc/begin_surgery(remove_implants = FALSE)
+/// Healing takes twice the servo-adjusted duration of an installation or removal.
+/obj/machinery/sleeper/autodoc/proc/get_procedure_duration(heal_damage = FALSE)
+	return procedure_duration * (heal_damage ? 2 : 1)
+
+/// Start a timed installation, implant removal, or full damage treatment.
+/obj/machinery/sleeper/autodoc/proc/begin_surgery(remove_implants = FALSE, heal_damage = FALSE)
 	if(operating || state_open || panel_open || !ishuman(occupant) || !is_operational)
+		return FALSE
+	if(remove_implants && heal_damage)
 		return FALSE
 	var/mob/living/carbon/human/patient = occupant
 	if(remove_implants && !length(patient.implants))
 		status_text = "No implants to remove."
 		return FALSE
-	if(!remove_implants && !can_operate(patient))
+	if(!remove_implants && !heal_damage && !can_operate(patient))
 		status_text = "Cannot operate: payload incompatible with patient."
 		to_chat(patient, span_warning("[src] cannot use the loaded item on your anatomy."))
 		return FALSE
 	operating = TRUE
 	operating_sound.start()
-	status_text = "Surgery in progress ([round(procedure_duration / (1 SECONDS), 0.1)] seconds)."
+	var/duration = get_procedure_duration(heal_damage)
+	status_text = "[heal_damage ? "Healing" : "Surgery"] in progress ([round(duration / (1 SECONDS), 0.1)] seconds)."
 	visible_message(span_notice("[src] seals its surgical instruments around [patient]."))
-	procedure_timer = addtimer(CALLBACK(src, PROC_REF(finish_procedure), patient, surgical_payload, remove_implants), procedure_duration, TIMER_STOPPABLE)
+	procedure_timer = addtimer(CALLBACK(src, PROC_REF(finish_procedure), patient, surgical_payload, remove_implants, heal_damage), duration, TIMER_STOPPABLE)
 	return TRUE
 
 /obj/machinery/sleeper/autodoc/proc/can_operate(mob/living/carbon/human/patient)
@@ -178,13 +188,23 @@
 	return implant && implant.can_be_implanted_in(patient)
 
 /// Complete a procedure after rechecking the patient, power, and payload.
-/obj/machinery/sleeper/autodoc/proc/finish_procedure(mob/living/carbon/human/patient, obj/item/loaded_item, remove_implants = FALSE)
+/obj/machinery/sleeper/autodoc/proc/finish_procedure(mob/living/carbon/human/patient, obj/item/loaded_item, remove_implants = FALSE, heal_damage = FALSE)
 	if(QDELETED(src))
 		return
 	procedure_timer = null
 	stop_procedure()
-	if(occupant != patient || QDELETED(patient) || state_open || !is_operational || (!remove_implants && (surgical_payload != loaded_item || !can_operate(patient))))
+	if(occupant != patient || QDELETED(patient) || state_open || !is_operational || (!remove_implants && !heal_damage && (surgical_payload != loaded_item || !can_operate(patient))))
 		status_text = "Procedure cancelled: patient, payload, or power unavailable."
+		return
+
+	if(heal_damage)
+		// Heal in place so installed prosthetics, organs, and implants are preserved.
+		for(var/obj/item/organ/organ as anything in patient.organs)
+			organ.set_organ_damage(0)
+		patient.set_heartattack(FALSE)
+		patient.fully_heal(HEAL_DAMAGE | HEAL_WOUNDS | HEAL_BLOOD)
+		status_text = "Healing complete: internal and external damage repaired."
+		visible_message(span_notice("[src] chimes as the treatment finishes successfully."))
 		return
 
 	if(remove_implants)
