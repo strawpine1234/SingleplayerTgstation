@@ -15,12 +15,19 @@
 	var/operating = FALSE
 	var/procedure_duration = 10 SECONDS
 	var/status_text = "Ready for a surgical payload."
+	/// Sound played only while a procedure is active.
+	var/datum/looping_sound/autodoc/operating_sound
+	/// Stoppable completion timer, cancelled on interruption.
+	var/procedure_timer
 
 /obj/machinery/sleeper/autodoc/Initialize(mapload)
 	. = ..()
 	occupant_typecache = typecacheof(/mob/living/carbon/human)
+	operating_sound = new(src)
 
 /obj/machinery/sleeper/autodoc/Destroy()
+	stop_procedure()
+	QDEL_NULL(operating_sound)
 	surgical_payload = null // The parent handles inventory disposal.
 	return ..()
 
@@ -114,20 +121,27 @@
 			return TRUE
 		if("start")
 			return begin_surgery()
+		if("remove_implants")
+			return begin_surgery(remove_implants = TRUE)
 	return FALSE
 
-/obj/machinery/sleeper/autodoc/proc/begin_surgery()
-	if(operating || state_open || !ishuman(occupant) || !surgical_payload || !is_operational)
+/// Start a timed installation or removal of all injected implants.
+/obj/machinery/sleeper/autodoc/proc/begin_surgery(remove_implants = FALSE)
+	if(operating || state_open || !ishuman(occupant) || !is_operational)
 		return FALSE
 	var/mob/living/carbon/human/patient = occupant
-	if(!can_operate(patient))
+	if(remove_implants && !length(patient.implants))
+		status_text = "No implants to remove."
+		return FALSE
+	if(!remove_implants && !can_operate(patient))
 		status_text = "Cannot operate: payload incompatible with patient."
 		to_chat(patient, span_warning("[src] cannot use the loaded item on your anatomy."))
 		return FALSE
 	operating = TRUE
+	operating_sound.start()
 	status_text = "Surgery in progress (10 seconds)."
 	visible_message(span_notice("[src] seals its surgical instruments around [patient]."))
-	addtimer(CALLBACK(src, PROC_REF(finish_procedure), patient, surgical_payload), procedure_duration)
+	procedure_timer = addtimer(CALLBACK(src, PROC_REF(finish_procedure), patient, surgical_payload, remove_implants), procedure_duration, TIMER_STOPPABLE)
 	return TRUE
 
 /obj/machinery/sleeper/autodoc/proc/can_operate(mob/living/carbon/human/patient)
@@ -142,12 +156,36 @@
 	var/obj/item/implant/implant = get_implant()
 	return implant && implant.can_be_implanted_in(patient)
 
-/obj/machinery/sleeper/autodoc/proc/finish_procedure(mob/living/carbon/human/patient, obj/item/loaded_item)
+/// Complete a procedure after rechecking the patient, power, and payload.
+/obj/machinery/sleeper/autodoc/proc/finish_procedure(mob/living/carbon/human/patient, obj/item/loaded_item, remove_implants = FALSE)
 	if(QDELETED(src))
 		return
-	operating = FALSE
-	if(occupant != patient || !patient || surgical_payload != loaded_item || !is_operational || !can_operate(patient))
+	procedure_timer = null
+	stop_procedure()
+	if(occupant != patient || QDELETED(patient) || state_open || !is_operational || (!remove_implants && (surgical_payload != loaded_item || !can_operate(patient))))
 		status_text = "Procedure cancelled: patient, payload, or power unavailable."
+		return
+
+	if(remove_implants)
+		var/removed_count = 0
+		// Removal mutates the implant list and may delete the implant itself.
+		var/list/implants = patient.implants?.Copy()
+		for(var/obj/item/implant/implant as anything in implants)
+			if(QDELETED(patient) || occupant != patient || !is_operational)
+				break
+			if(QDELETED(implant) || implant.imp_in != patient)
+				continue
+			implant.removed(patient)
+			if(!QDELETED(implant) && implant.imp_in == patient)
+				continue
+			removed_count++
+			if(QDELETED(implant))
+				continue
+			var/obj/item/implantcase/case = new(drop_location())
+			case.imp = implant
+			implant.forceMove(case)
+			case.update_appearance()
+		status_text = "Implant removal complete: [removed_count] removed."
 		return
 
 	var/success = FALSE
@@ -199,3 +237,30 @@
 	if(operating)
 		return CLICK_ACTION_BLOCKING
 	return ..()
+
+/// Stop operation and audio, preventing a cancelled timer from completing a later surgery.
+/obj/machinery/sleeper/autodoc/proc/stop_procedure()
+	if(procedure_timer)
+		deltimer(procedure_timer)
+		procedure_timer = null
+	operating = FALSE
+	operating_sound?.stop()
+
+/obj/machinery/sleeper/autodoc/on_set_is_operational(old_value)
+	. = ..()
+	if(operating && !is_operational)
+		stop_procedure()
+		status_text = "Procedure interrupted: power or machine unavailable."
+
+/obj/machinery/sleeper/autodoc/set_occupant(atom/movable/new_occupant)
+	if(operating && new_occupant != occupant)
+		stop_procedure()
+		status_text = "Procedure interrupted: patient unavailable."
+	return ..()
+
+/// The reagent grinder's sound, using a token so stopping cuts off playback for all listeners.
+/datum/looping_sound/autodoc
+	mid_sounds = 'sound/machines/blender.ogg'
+	mid_length = 2 SECONDS
+	volume = 50
+	use_sound_tokens = TRUE

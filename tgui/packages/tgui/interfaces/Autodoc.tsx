@@ -17,7 +17,7 @@ export const Autodoc = () => {
   const { patient, payload, operating, open, status, duration } = data;
 
   return (
-    <Window width={460} height={365} title="Autodoc">
+    <Window width={460} height={430} title="Autodoc">
       <Window.Content>
         <Stack vertical fill>
           <Stack.Item>
@@ -90,9 +90,19 @@ export const Autodoc = () => {
               >
                 {operating ? 'Operating...' : 'Begin 10-Second Surgery'}
               </Button>
+              <Button
+                fluid
+                mt={1}
+                icon="trash"
+                color="red"
+                disabled={operating || !patient || open}
+                onClick={() => act('remove_implants')}
+              >
+                Remove All Implants
+              </Button>
               <Box mt={1} color="label">
-                An implant is installed, an organ is replaced in its slot,
-                or a limb is swapped at its matching body zone.
+                An implant is installed, an organ is replaced in its slot, or a
+                limb is swapped at its matching body zone.
               </Box>
             </Section>
           </Stack.Item>
