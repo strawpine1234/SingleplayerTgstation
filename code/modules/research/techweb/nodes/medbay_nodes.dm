@@ -19,6 +19,7 @@
 		/datum/design/large_beaker,
 		/datum/design/medical_bed,
 		/datum/design/board/operating,
+		/datum/design/board/autodoc,
 		/datum/design/organ_jar,
 		/datum/design/penlight,
 		/datum/design/penlight_paramedic,

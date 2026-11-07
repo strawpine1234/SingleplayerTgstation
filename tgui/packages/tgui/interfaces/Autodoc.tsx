@@ -88,7 +88,9 @@ export const Autodoc = () => {
                 disabled={operating || !patient || !payload || open}
                 onClick={() => act('start')}
               >
-                {operating ? 'Operating...' : 'Begin 10-Second Surgery'}
+                {operating
+                  ? 'Operating...'
+                  : `Begin ${duration}-Second Surgery`}
               </Button>
               <Button
                 fluid
