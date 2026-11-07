@@ -684,6 +684,11 @@
 	name = "Bitrunning Vendor Console"
 	build_path = /obj/machinery/computer/order_console/bitrunning
 
+/obj/item/circuitboard/computer/expedition
+	name = "Expedition Mission Console"
+	greyscale_colors = CIRCUIT_COLOR_SUPPLY
+	build_path = /obj/machinery/computer/expedition
+
 /obj/item/circuitboard/computer/ferry
 	name = "Transport Ferry"
 	greyscale_colors = CIRCUIT_COLOR_SUPPLY
