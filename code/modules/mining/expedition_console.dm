@@ -209,7 +209,10 @@ GLOBAL_DATUM_INIT(solo_expeditions, /datum/solo_expedition_board, new)
 	for(var/mob/living/guard as anything in guards)
 		if(!QDELETED(guard))
 			UnregisterSignal(guard, list(COMSIG_LIVING_DEATH, COMSIG_QDELETING))
-	QDEL_LIST(guards)
+			// Carbon corpses remain available for looting, surgery, or revival.
+			if(!iscarbon(guard) || guard.stat != DEAD)
+				qdel(guard)
+	guards.Cut()
 	living_guards = null
 	if(beacon)
 		beacon.mission = null
@@ -345,7 +348,7 @@ GLOBAL_DATUM_INIT(solo_expeditions, /datum/solo_expedition_board, new)
 	blocked_retries = 0
 	waves_sent++
 	for(var/index in 1 to wave_size)
-		var/mob_type = index == wave_size ? /mob/living/basic/trooper/syndicate/ranged/expedition_boarder : /mob/living/basic/trooper/syndicate/melee/expedition_boarder
+		var/mob_type = index == wave_size ? /mob/living/carbon/human/expedition_boarder/gunner : /mob/living/carbon/human/expedition_boarder
 		var/mob/living/boarder = new mob_type(pick_n_take(exits))
 		boarder.name = "[boarder.name] ([gps_tag])"
 		guards += boarder
@@ -354,6 +357,7 @@ GLOBAL_DATUM_INIT(solo_expeditions, /datum/solo_expedition_board, new)
 		RegisterSignal(boarder, COMSIG_LIVING_DEATH, PROC_REF(target_died))
 		RegisterSignal(boarder, COMSIG_QDELETING, PROC_REF(target_deleted))
 	beacon.visible_message(span_danger("[beacon] deploys boarding wave [waves_sent] of 3!"))
+	beacon.update_appearance()
 	if(waves_sent >= 3)
 		stop_siege_deployment()
 	else
@@ -367,6 +371,7 @@ GLOBAL_DATUM_INIT(solo_expeditions, /datum/solo_expedition_board, new)
 		deltimer(wave_timer)
 		wave_timer = null
 	check_siege_completion()
+	beacon?.update_appearance()
 
 /// Completion cannot occur until at least one wave has deployed and all targets are dead.
 /datum/solo_expedition/proc/check_siege_completion()
@@ -466,8 +471,9 @@ GLOBAL_DATUM_INIT(solo_expeditions, /datum/solo_expedition_board, new)
 /obj/structure/expedition_beacon/siege
 	name = "hostile boarding pod"
 	desc = "A hostile deployment pod. After its first wave, interact with it for twelve seconds to disable reinforcements, or destroy it."
-	icon = 'icons/obj/pipes_n_cables/transit_tube.dmi'
-	icon_state = "pod"
+	icon = 'icons/obj/supplypods.dmi'
+	icon_state = "darkpod"
+	pixel_x = SUPPLYPOD_X_OFFSET
 	density = TRUE
 	max_integrity = 300
 
@@ -476,6 +482,27 @@ GLOBAL_DATUM_INIT(solo_expeditions, /datum/solo_expedition_board, new)
 	if(mission)
 		name = "hostile boarding pod ([mission.gps_tag])"
 	set_light(3, 1, COLOR_RED)
+	update_appearance()
+
+/obj/structure/expedition_beacon/siege/update_overlays()
+	. = ..()
+	if(!mission || !mission.waves_sent)
+		// Preserve the fins in front of the hatch, as the normal supply pod renderer does.
+		var/icon/hatch = new(icon, "darkpod_door")
+		var/icon/fins = new(icon, "mask_topfin")
+		fins.MapColors(0,0,0,1, 0,0,0,1, 0,0,0,1, 1,1,1,0, 0,0,0,1)
+		fins.SwapColor("#ffffffff", null)
+		fins.Blend(COLOR_BLACK, ICON_SUBTRACT)
+		hatch.Blend(fins, ICON_ADD)
+		. += hatch
+	. += mutable_appearance(icon, "syndicate")
+	var/glow = mission?.deployment_disabled ? "pod_glow_blue" : "pod_glow_red"
+	. += mutable_appearance(icon, glow)
+	. += emissive_appearance(icon, glow, src)
+
+/obj/structure/expedition_beacon/siege/update_icon_state()
+	set_light(3, 1, mission?.deployment_disabled ? LIGHT_COLOR_BLUE : COLOR_RED)
+	return ..()
 
 /obj/structure/expedition_beacon/siege/attack_hand(mob/living/user, list/modifiers)
 	if(!mission || mission.state != "active" || working || !ishuman(user) || !user.can_perform_action(src))
@@ -506,27 +533,97 @@ GLOBAL_DATUM_INIT(solo_expeditions, /datum/solo_expedition_board, new)
 		owner.stop_siege_deployment()
 	return ..()
 
-/// Finite siege troops with normal AI, no equipment farming, and moderate health.
-/mob/living/basic/trooper/syndicate/melee/expedition_boarder
+/// Real human boarders use the same organs, wounds, blood, critical states and corpses as crew.
+/mob/living/carbon/human/expedition_boarder
 	name = "boarding raider"
-	maxHealth = 80
-	health = 80
-	melee_damage_lower = 12
-	melee_damage_upper = 12
-	corpse = null
-	unsuitable_atmos_damage = 0
-	unsuitable_cold_damage = 0
-	unsuitable_heat_damage = 0
+	faction = list(ROLE_SYNDICATE)
+	ai_controller = /datum/ai_controller/monkey/angry/expedition_boarder
+	/// Equipment role; gunner is otherwise an ordinary human.
+	var/is_gunner = FALSE
+	/// Prevent NPC ranged fire from exceeding the original siege firing interval.
+	var/next_siege_shot = 0
 
-/mob/living/basic/trooper/syndicate/ranged/expedition_boarder
+/mob/living/carbon/human/expedition_boarder/Initialize(mapload)
+	. = ..()
+	real_name = name
+	equipOutfit(/datum/outfit/expedition_boarder)
+	if(is_gunner)
+		put_in_hands(new /obj/item/gun/ballistic/automatic/pistol(src))
+	else
+		put_in_hands(new /obj/item/knife/combat/survival(src))
+	ai_controller.set_blackboard_key(BB_MONKEY_GUN_NEURONS_ACTIVATED, is_gunner)
+
+/mob/living/carbon/human/expedition_boarder/gunner
 	name = "boarding gunner"
-	maxHealth = 70
-	health = 70
-	ranged_cooldown = 2.5 SECONDS
-	corpse = null
-	unsuitable_atmos_damage = 0
-	unsuitable_cold_damage = 0
-	unsuitable_heat_damage = 0
+	is_gunner = TRUE
+
+/// Ordinary wearable armour and weapons can be removed from the resulting body.
+/datum/outfit/expedition_boarder
+	name = "Expedition boarding raider"
+	uniform = /obj/item/clothing/under/syndicate
+	suit = /obj/item/clothing/suit/armor/vest
+	head = /obj/item/clothing/head/helmet
+	mask = /obj/item/clothing/mask/balaclava
+	shoes = /obj/item/clothing/shoes/combat
+	gloves = /obj/item/clothing/gloves/combat
+
+/// Carbon-compatible combat AI: normal item attacks and movement, without monkey pranks.
+/datum/ai_controller/monkey/angry/expedition_boarder
+	behavior_tree_json = null
+	behavior_nodes = list(
+		BT_DESC_TYPE = /datum/bt_node/composite/sequence,
+		BT_DESC_CHILDREN = list(
+			list(BT_DESC_TYPE = /datum/bt_node/ai_behavior/expedition_acquire_target),
+			list(
+				BT_DESC_TYPE = /datum/bt_node/composite/parallel,
+				"failure_policy" = BT_PARALLEL_FAILURE_CHILD_ONE,
+				"success_policy" = BT_PARALLEL_SUCCESS_CHILD_ONE,
+				"repeat_secondary" = TRUE,
+				"repeat_secondary_delay" = 0.2 SECONDS,
+				"finish_on_primary" = TRUE,
+				BT_DESC_CHILDREN = list(
+					list(BT_DESC_TYPE = /datum/bt_node/ai_behavior/monkey_attack_mob/expedition, "target_key" = BB_CURRENT_TARGET),
+					list(BT_DESC_TYPE = /datum/bt_node/ai_behavior/agile_melee_movement, "target_key" = BB_CURRENT_TARGET, "standoff_max" = 4),
+				),
+			),
+		),
+	)
+
+/// Select a nearby conscious enemy, respecting team membership and line of sight.
+/datum/bt_node/ai_behavior/expedition_acquire_target
+
+/datum/bt_node/ai_behavior/expedition_acquire_target/perform(seconds_per_tick, datum/ai_controller/controller)
+	var/mob/living/pawn = controller.pawn
+	var/mob/living/closest
+	for(var/mob/living/candidate in oview(9, pawn))
+		if(IS_UNCONSCIOUS_OR_CRIT(candidate) || pawn.faction_check_atom(candidate))
+			continue
+		if(!closest || get_dist(pawn, candidate) < get_dist(pawn, closest))
+			closest = candidate
+	if(!closest)
+		controller.clear_blackboard_key(BB_CURRENT_TARGET)
+		pawn.set_combat_mode(FALSE)
+		return AI_BEHAVIOR_DELAY | AI_BEHAVIOR_FAILED
+	controller.set_blackboard_key(BB_CURRENT_TARGET, closest)
+	pawn.set_combat_mode(TRUE)
+	return AI_BEHAVIOR_INSTANT | AI_BEHAVIOR_SUCCEEDED
+
+/// Use normal carbon weapon interactions; raiders keep knives rather than throwing them away.
+/datum/bt_node/ai_behavior/monkey_attack_mob/expedition
+
+/datum/bt_node/ai_behavior/monkey_attack_mob/expedition/monkey_attack(datum/ai_controller/controller, mob/living/target, seconds_per_tick, disarm, holding_weapon)
+	var/mob/living/carbon/human/expedition_boarder/boarder = controller.pawn
+	if(QDELETED(target) || IS_UNCONSCIOUS_OR_CRIT(target) || boarder.faction_check_atom(target))
+		return FALSE
+	if(get_dist(boarder, target) > 1)
+		var/obj/item/gun/gun = boarder.is_holding_item_of_type(/obj/item/gun)
+		if(!gun || !gun.can_shoot() || world.time < boarder.next_siege_shot)
+			return FALSE
+		boarder.next_siege_shot = world.time + 2.5 SECONDS
+		boarder.face_atom(target)
+		controller.ai_interact(target = target, combat_mode = TRUE)
+		return TRUE
+	return ..()
 
 /// Mythical artifacts use existing abilities with explicitly stronger statistics.
 /obj/item/highfrequencyblade/expedition_mythic
