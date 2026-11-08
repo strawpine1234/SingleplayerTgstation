@@ -24,6 +24,8 @@ type Mission = {
   kills: number;
   targets: number;
   recovered: boolean;
+  waves: number;
+  deployment_disabled: boolean;
 };
 
 type Data = {
@@ -45,8 +47,9 @@ export const ExpeditionConsole = () => {
           <Box>
             Travel using the mining shuttle or your usual mining transport.
             Bring a GPS and protection for the mining planet. Sites are deployed
-            in Lavaland wilderness or the ice moon underground. All consoles
-            share one active expedition. Rewards arrive beside the console.
+            in Lavaland wilderness or the ice moon underground; boarding sieges
+            take place on the station. All consoles share one active expedition.
+            Rewards arrive beside the console.
           </Box>
           {cooldown > 0 && (
             <Box mt={1} color="average">
@@ -66,9 +69,21 @@ export const ExpeditionConsole = () => {
                 {active.coordinates || 'Beacon unavailable'}
               </LabeledList.Item>
               {active.targets > 0 && (
-                <LabeledList.Item label="Assigned fauna eliminated">
+                <LabeledList.Item label="Hostiles eliminated">
                   {active.kills} / {active.targets}
                 </LabeledList.Item>
+              )}
+              {active.kind === 'siege' && (
+                <>
+                  <LabeledList.Item label="Waves deployed">
+                    {active.waves} / 3
+                  </LabeledList.Item>
+                  <LabeledList.Item label="Pod deployment system">
+                    {active.deployment_disabled
+                      ? 'Disabled / exhausted'
+                      : 'Active'}
+                  </LabeledList.Item>
+                </>
               )}
             </LabeledList>
             {active.kind === 'salvage' && active.recovered && (
@@ -142,8 +157,10 @@ const MissionDetails = ({ mission }: { mission: Mission }) => (
   <Box mb={2}>
     <Box mb={1}>{mission.description}</Box>
     <Box color="average">
-      Difficulty: {mission.difficulty}/3 · Field work: {mission.work_seconds}{' '}
-      seconds
+      Difficulty: {mission.difficulty}/4
+      {mission.kind === 'siege'
+        ? ' · Mythical rewards · 45-second preparation · up to 3 waves'
+        : ` · Field work: ${mission.work_seconds} seconds`}
     </Box>
     <Box color="label">
       Reward choice: {mission.rewards.map((reward) => reward.name).join(', ')}.
