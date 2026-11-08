@@ -7,7 +7,7 @@ spawn `/obj/machinery/computer/expedition`.
 
 Every board has three offers in random order: one survey, one salvage recovery,
 and one hunt. Titles, difficulty, field-work duration, encounter composition,
-and credit payouts vary. All consoles share one active expedition and progress
+and reward tiers vary. All consoles share one active expedition and progress
 for the round, including across console reconstruction.
 
 1. Accept an offer. A clear natural site is selected on a mining z-level, in
@@ -20,9 +20,19 @@ for the round, including across console reconstruction.
    duration. Survey work completes there. Salvage produces a unique recorder
    that must be used on a console. Hunts require killing the specific tagged
    fauna before verifying the beacon. Native fauna do not count.
-4. Return to a powered console and choose **one** reward: 1,000–2,000 credits,
-   an advanced and regular medkit, or a tier-two servo (tier three on difficulty
-   three). Rewards appear beside the console and three fresh offers are generated.
+4. Return to a powered console and choose **one** of the three advertised rare
+   rewards. Rewards appear beside the console and three fresh offers are generated.
+
+| Difficulty | Reward choices |
+| --- | --- |
+| 1 | Linked warp cube pair; Immortality Talisman; Rapid Repeater design disk |
+| 2 | Resurrection crystal; Eye of God; Hierophant club |
+| 3 | High-frequency blade; godslayer armour; admin-only omnitool |
+
+Each artifact retains its normal abilities, restrictions, and drawbacks. The red
+warp cube automatically creates its linked blue partner. The resurrection crystal
+must be activated and cannot save a completely destroyed body. The Eye of God
+binds when equipped. The omnitool switches between tool modes when used in hand.
 
 Abandoning an expedition removes its beacon, recorder, and assigned fauna and
 imposes a one-minute departure cooldown. Loss of an uncompleted objective or a

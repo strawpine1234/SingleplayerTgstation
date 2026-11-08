@@ -67,24 +67,16 @@ GLOBAL_DATUM_INIT(solo_expeditions, /datum/solo_expedition_board, new)
 /datum/solo_expedition_board/proc/claim(id, reward, turf/delivery_turf)
 	if(!active || active.id != id || active.state != "complete" || !delivery_turf)
 		return FALSE
-	if(!(reward in list("credits", "medical", "parts")))
+	if(!istext(reward) || !(reward in active.reward_options))
 		return FALSE
-	var/credits = active.credits
-	var/difficulty = active.difficulty
+	var/list/choice = active.reward_options[reward]
+	var/reward_type = choice["type"]
+	if(!ispath(reward_type, /obj/item))
+		return FALSE
 	active.state = "claimed"
 	active = null
 	completed++
-	switch(reward)
-		if("credits")
-			new /obj/item/holochip(delivery_turf, credits)
-		if("medical")
-			new /obj/item/storage/medkit/advanced(delivery_turf)
-			new /obj/item/storage/medkit/regular(delivery_turf)
-		if("parts")
-			if(difficulty >= 3)
-				new /obj/item/stock_parts/servo/pico(delivery_turf)
-			else
-				new /obj/item/stock_parts/servo/nano(delivery_turf)
+	new reward_type(delivery_turf)
 	roll_offers()
 	status = "Reward delivered. Three new expeditions are available."
 	return TRUE
@@ -101,8 +93,8 @@ GLOBAL_DATUM_INIT(solo_expeditions, /datum/solo_expedition_board, new)
 	var/description
 	/// Difficulty from one to three.
 	var/difficulty
-	/// Credit option for this offer.
-	var/credits
+	/// Server-owned reward choices, fixed when the offer is generated.
+	var/list/reward_options = list()
 	/// Duration of the on-site interaction.
 	var/work_time
 	/// Lifecycle: offered, active, complete, failed, or claimed.
@@ -127,7 +119,7 @@ GLOBAL_DATUM_INIT(solo_expeditions, /datum/solo_expedition_board, new)
 	kind = mission_kind
 	id = mission_id
 	difficulty = rand(1, 3)
-	credits = 500 + difficulty * 500
+	configure_rewards()
 	work_time = (10 + difficulty * 5) SECONDS
 	gps_tag = "EXP-[id]"
 	var/site_name = pick("Cinder", "Echo", "Horizon", "Pioneer", "Wayfarer", "Prospector")
@@ -141,6 +133,28 @@ GLOBAL_DATUM_INIT(solo_expeditions, /datum/solo_expedition_board, new)
 		if("hunt")
 			title = "[site_name] fauna suppression"
 			description = "Kill the marked expedition fauna, then interact with the beacon to verify the site. Return to a console afterward. Only these assigned targets count."
+
+/// Offer three exceptional items appropriate to the rolled difficulty.
+/datum/solo_expedition/proc/configure_rewards()
+	switch(difficulty)
+		if(1)
+			reward_options = list(
+				"warp" = list("name" = "Linked warp cube pair", "description" = "Two linked cubes for teleporting between their locations. Normal teleport restrictions apply.", "type" = /obj/item/warp_cube/red),
+				"talisman" = list("name" = "Immortality Talisman", "description" = "A rare artifact granting temporary invulnerability on a cooldown.", "type" = /obj/item/immortality_talisman),
+				"modkit" = list("name" = "Rapid Repeater design disk", "description" = "An unusual kinetic-accelerator upgrade blueprint for your research console.", "type" = /obj/item/disk/design_disk/modkit_disc/rapid_repeater),
+			)
+		if(2)
+			reward_options = list(
+				"resurrection" = list("name" = "Resurrection crystal", "description" = "Activate it to gain a second chance after death. Cannot save you from complete bodily destruction.", "type" = /obj/item/resurrection_crystal),
+				"eye" = list("name" = "Eye of God", "description" = "A powerful vision and scanning artifact. Equipping it binds it to you.", "type" = /obj/item/clothing/glasses/godeye),
+				"club" = list("name" = "Hierophant club", "description" = "The Hierophant's rare weapon, with its normal attacks and beacon abilities.", "type" = /obj/item/hierophant_club),
+			)
+		if(3)
+			reward_options = list(
+				"blade" = list("name" = "High-frequency blade", "description" = "An exceptional energy blade normally unavailable from ordinary station production.", "type" = /obj/item/highfrequencyblade),
+				"armour" = list("name" = "Godslayer armour", "description" = "Legendary protective armour with a powerful emergency healing effect.", "type" = /obj/item/clothing/suit/hooded/cloak/godslayer),
+				"omnitool" = list("name" = "Omnitool", "description" = "An admin-only multipurpose engineering tool, awarded here as expedition treasure.", "type" = /obj/item/debug/omnitool),
+			)
 
 /datum/solo_expedition/Destroy()
 	// Unregister first: deleting targets during cleanup must not report failure or kills.
@@ -236,13 +250,17 @@ GLOBAL_DATUM_INIT(solo_expeditions, /datum/solo_expedition_board, new)
 /// Serialize only player-facing data; no client-provided reward values or completion states.
 /datum/solo_expedition/proc/get_mission_data()
 	var/turf/site = get_turf(beacon)
+	var/list/rewards = list()
+	for(var/reward_id in reward_options)
+		var/list/choice = reward_options[reward_id]
+		rewards += list(list("id" = reward_id, "name" = choice["name"], "description" = choice["description"]))
 	return list(
 		"id" = id,
 		"kind" = kind,
 		"title" = title,
 		"description" = description,
 		"difficulty" = difficulty,
-		"credits" = credits,
+		"rewards" = rewards,
 		"work_seconds" = work_time / (1 SECONDS),
 		"state" = state,
 		"gps" = gps_tag,
@@ -250,7 +268,6 @@ GLOBAL_DATUM_INIT(solo_expeditions, /datum/solo_expedition_board, new)
 		"kills" = kills,
 		"targets" = target_count,
 		"recovered" = !isnull(evidence),
-		"parts" = difficulty >= 3 ? "Pico servo (tier 3)" : "Nano servo (tier 2)",
 	)
 
 /// In-world objective; the mission owns its lifetime and GPS component.

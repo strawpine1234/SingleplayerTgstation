@@ -16,7 +16,7 @@ type Mission = {
   title: string;
   description: string;
   difficulty: number;
-  credits: number;
+  rewards: { id: string; name: string; description: string }[];
   work_seconds: number;
   state: string;
   gps: string;
@@ -24,7 +24,6 @@ type Mission = {
   kills: number;
   targets: number;
   recovered: boolean;
-  parts: string;
 };
 
 type Data = {
@@ -86,20 +85,21 @@ export const ExpeditionConsole = () => {
             {active.state === 'complete' && (
               <Section title="Choose one reward">
                 <Stack vertical>
-                  {[
-                    ['credits', `${active.credits} credits`],
-                    ['medical', 'Advanced + regular medical kits'],
-                    ['parts', active.parts],
-                  ].map(([reward, label]) => (
-                    <Stack.Item key={reward}>
+                  {active.rewards.map((reward) => (
+                    <Stack.Item key={reward.id}>
                       <Button
                         fluid
                         icon="gift"
                         color="good"
-                        onClick={() => act('claim', { id: active.id, reward })}
+                        onClick={() =>
+                          act('claim', { id: active.id, reward: reward.id })
+                        }
                       >
-                        {label}
+                        {reward.name}
                       </Button>
+                      <Box mt={1} color="label">
+                        {reward.description}
+                      </Box>
                     </Stack.Item>
                   ))}
                 </Stack>
@@ -146,8 +146,7 @@ const MissionDetails = ({ mission }: { mission: Mission }) => (
       seconds
     </Box>
     <Box color="label">
-      Reward choice: {mission.credits} credits, medical kits, or {mission.parts}
-      .
+      Reward choice: {mission.rewards.map((reward) => reward.name).join(', ')}.
     </Box>
   </Box>
 );
