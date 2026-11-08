@@ -20,6 +20,7 @@ type Mission = {
   work_seconds: number;
   state: string;
   gps: string;
+  room: string;
   coordinates: string | null;
   kills: number;
   targets: number;
@@ -62,6 +63,7 @@ export const ExpeditionConsole = () => {
             <MissionDetails mission={active} />
             <LabeledList>
               <LabeledList.Item label="State">{active.state}</LabeledList.Item>
+              <LabeledList.Item label="Room">{active.room}</LabeledList.Item>
               <LabeledList.Item label="GPS signal">
                 {active.gps}
               </LabeledList.Item>

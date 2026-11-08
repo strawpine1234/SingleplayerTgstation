@@ -51,7 +51,7 @@ GLOBAL_DATUM_INIT(solo_expeditions, /datum/solo_expedition_board, new)
 			active = null
 			status = "No clear site found for this mission. Check that the station or mining map is available."
 			return FALSE
-		status = "Expedition accepted. Follow the GPS signal [mission.gps_tag], then return here for your reward."
+		status = "Expedition accepted. Destination: [mission.destination_room]. Follow GPS signal [mission.gps_tag], then return here for your reward."
 		return TRUE
 	return FALSE
 
@@ -103,6 +103,8 @@ GLOBAL_DATUM_INIT(solo_expeditions, /datum/solo_expedition_board, new)
 	var/state = "offered"
 	/// Unique GPS signal for the deployed site.
 	var/gps_tag
+	/// Deployment room, retained after the pod or beacon is destroyed.
+	var/destination_room = "Not deployed"
 	/// Deployed objective beacon.
 	var/obj/structure/expedition_beacon/beacon
 	/// All mission-owned fauna, retained for cleanup.
@@ -262,11 +264,14 @@ GLOBAL_DATUM_INIT(solo_expeditions, /datum/solo_expedition_board, new)
 	var/turf/site = kind == "siege" ? find_siege_site() : find_site()
 	if(!site)
 		return FALSE
+	var/area/destination = get_area(site)
+	destination_room = destination.name
 	state = "active"
 	if(kind == "siege")
 		beacon = new /obj/structure/expedition_beacon/siege(site, src)
 		beacon.visible_message(span_danger("A hostile boarding pod docks! Its deployment bay will open in 45 seconds!"))
 		wave_timer = addtimer(CALLBACK(src, PROC_REF(dispatch_siege_wave)), 45 SECONDS, TIMER_STOPPABLE)
+		priority_announce("Hostile boarding pod detected in [destination_room]. Its deployment bay opens in 45 seconds. Prepare to repel boarders. GPS signal: [gps_tag].", "Boarding Pod Siege Alert")
 		return TRUE
 	beacon = new(site, src)
 	if(kind == "survey")
@@ -395,6 +400,7 @@ GLOBAL_DATUM_INIT(solo_expeditions, /datum/solo_expedition_board, new)
 		"work_seconds" = work_time / (1 SECONDS),
 		"state" = state,
 		"gps" = gps_tag,
+		"room" = destination_room,
 		"coordinates" = site ? "[site.x], [site.y], [site.z]" : null,
 		"kills" = kills,
 		"targets" = target_count,
