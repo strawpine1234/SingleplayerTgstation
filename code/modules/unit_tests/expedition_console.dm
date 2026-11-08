@@ -1,0 +1,68 @@
+/// Offer variety, stale actions, premature claims, and duplicate reward protection.
+/datum/unit_test/expedition_console
+
+/datum/unit_test/expedition_console/Run()
+	var/datum/solo_expedition_board/board = new
+	TEST_ASSERT_EQUAL(length(board.offers), 3, "Exactly three expeditions must be offered.")
+	var/list/kinds = list()
+	for(var/datum/solo_expedition/mission as anything in board.offers)
+		kinds |= mission.kind
+		TEST_ASSERT(mission.difficulty >= 1 && mission.difficulty <= 3, "Difficulty must be within the advertised range.")
+		TEST_ASSERT_EQUAL(length(mission.reward_options), 3, "Each offer must draw exactly three rewards.")
+		var/list/pool = mission.get_reward_pool(mission.difficulty)
+		for(var/reward_id in mission.reward_options)
+			TEST_ASSERT(reward_id in pool, "Rewards must belong to the mission's tier.")
+	TEST_ASSERT_EQUAL(length(kinds), 3, "The board must offer three distinct objective types.")
+	TEST_ASSERT(!board.accept_offer("invalid"), "An arbitrary client offer ID must not deploy a mission.")
+	var/datum/solo_expedition/selected = board.offers[1]
+	var/old_id = selected.id
+	var/chosen_reward = selected.reward_options[1]
+	var/list/chosen_definition = selected.reward_options[chosen_reward]
+	var/reward_type = chosen_definition["type"]
+	TEST_ASSERT(!selected.configure_rewards(), "An existing offer must not reroll its rewards.")
+	TEST_ASSERT_EQUAL(selected.reward_options[1], chosen_reward, "Repeated configuration must preserve the choices.")
+	board.active = selected
+	selected.state = "active"
+	TEST_ASSERT(!board.roll_offers(), "Active expeditions must prevent rerolls.")
+	TEST_ASSERT(!board.claim(old_id, chosen_reward, run_loc_floor_bottom_left), "Incomplete missions must not pay out.")
+	selected.state = "complete"
+	TEST_ASSERT(!board.claim(old_id, "forged_reward", run_loc_floor_bottom_left), "Unknown rewards must be rejected.")
+	TEST_ASSERT_EQUAL(board.active, selected, "Rejected claims must preserve the mission.")
+	var/list/full_pool = selected.get_reward_pool(selected.difficulty)
+	for(var/reward_id in full_pool)
+		if(!(reward_id in selected.reward_options))
+			TEST_ASSERT(!board.claim(old_id, reward_id, run_loc_floor_bottom_left), "A valid but unoffered reward must not be claimable.")
+	TEST_ASSERT(board.claim(old_id, chosen_reward, run_loc_floor_bottom_left), "Completed expedition must pay out.")
+	TEST_ASSERT_EQUAL(board.completed, 1, "A successful claim must be recorded once.")
+	TEST_ASSERT(!board.claim(old_id, chosen_reward, run_loc_floor_bottom_left), "Duplicate claims must not pay out.")
+	TEST_ASSERT_EQUAL(length(board.offers), 3, "A reward must generate three fresh offers.")
+	TEST_ASSERT(!board.accept_offer(old_id), "A stale offer ID must not select a replacement mission.")
+	var/obj/item/payment = locate(reward_type) in run_loc_floor_bottom_left
+	TEST_ASSERT_NOTNULL(payment, "The chosen artifact must be delivered.")
+	qdel(payment)
+	selected = board.offers[1]
+	board.active = selected
+	TEST_ASSERT(board.abandon(selected.id), "Active expedition must be abandonable.")
+	TEST_ASSERT(board.next_start > world.time, "Abandonment must enforce a departure cooldown.")
+	selected = board.offers[1]
+	TEST_ASSERT(!board.accept_offer(selected.id), "New offers must respect the cooldown.")
+	qdel(board)
+
+/// The three pools must remain disjoint and large enough to provide real variety.
+/datum/unit_test/expedition_reward_pools
+
+/datum/unit_test/expedition_reward_pools/Run()
+	var/datum/solo_expedition/mission = new("survey", "test")
+	var/list/all_ids = list()
+	var/list/all_types = list()
+	for(var/tier in 1 to 3)
+		var/list/pool = mission.get_reward_pool(tier)
+		TEST_ASSERT_EQUAL(length(pool), 6, "Each tier must have six reward candidates.")
+		for(var/reward_id in pool)
+			var/list/definition = pool[reward_id]
+			TEST_ASSERT(!(reward_id in all_ids), "Reward IDs must not overlap across tiers.")
+			TEST_ASSERT(!(definition["type"] in all_types), "Reward items must not overlap across tiers.")
+			TEST_ASSERT(ispath(definition["type"], /obj/item), "Rewards must be valid item types.")
+			all_ids += reward_id
+			all_types += definition["type"]
+	qdel(mission)

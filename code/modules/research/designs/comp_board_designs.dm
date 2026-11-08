@@ -5,6 +5,13 @@
 	build_type = IMPRINTER | AWAY_IMPRINTER
 	materials = list(/datum/material/glass =HALF_SHEET_MATERIAL_AMOUNT)
 
+/datum/design/board/expedition
+	name = "Expedition Mission Console Board"
+	desc = "Used to build a console offering mining-planet expeditions and rewards."
+	build_path = /obj/item/circuitboard/computer/expedition
+	category = list(RND_CATEGORY_COMPUTER + RND_SUBCATEGORY_COMPUTER_CARGO)
+	departmental_flags = DEPARTMENT_BITFLAG_CARGO | DEPARTMENT_BITFLAG_ENGINEERING
+
 /datum/design/board/arcade_battle
 	name = "Battle Arcade Machine Board"
 	desc = "Used to build a battle arcade machine."
