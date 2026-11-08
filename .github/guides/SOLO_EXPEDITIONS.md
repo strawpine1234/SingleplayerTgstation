@@ -7,9 +7,15 @@ spawn `/obj/machinery/computer/expedition`.
 
 Every board has three offers in random order: one Syndicate Breach Raid, one
 Necropolis Breach, and one wilderness mission drawn from survey, salvage, and hunt.
+Central Command's Special Assignments Office issues every mission. Each brief
+explains the assignment and provides field orders, tracking details, and an
+authorized requisition reserve. Read the orders and prepare before accepting;
+station-defense deployments begin immediately, with a 45-second warning.
 Titles, difficulty, field-work duration, encounter composition,
 and reward tiers vary. All consoles share one active expedition and progress
 for the round, including across console reconstruction.
+
+For wilderness assignments:
 
 1. Accept an offer. A clear natural site is selected on a mining z-level, in
    Lavaland's unexplored surface or the ice moon's unexplored underground.
@@ -33,7 +39,7 @@ Choose one of the three on completion. Unoffered items cannot be claimed.
 | --- | --- |
 | 1 | Linked warp cubes; Immortality Talisman; Rapid Repeater design disk; wisp lantern; Book of Babel; linked paradox bags |
 | 2 | Resurrection crystal; Eye of God; Hierophant club; cleaving saw; Rod of Asclepius; flight potion |
-| 3 | High-frequency blade; godslayer armour; admin-only omnitool; divine vocal cords; berserker armour; staff of storms |
+| 3 | High-frequency blade; godslayer armour; omnitool; divine vocal cords; berserker armour; staff of storms |
 | 4 (general mythical pool) | Worldsplitter; Aegis of the Undying; Architect's Hand; Tempest Sovereign; Sovereign's Sceptre; Beastbane |
 
 Tier-four missions can select their own exclusive reward pool. The existing
@@ -42,10 +48,10 @@ these six new items, with one claim on completion:
 
 | Syndicate mythical reward | Abilities |
 | --- | --- |
-| Red Verdict | Activated red energy sword: 60 force, 70% block, 50 armour penetration. |
-| Crimson Bulwark | Activated hardlight shield: 90% block and eligible energy reflection; overwhelming attacks bypass it. |
-| Blackstar Carbine | Double-damage laser carbine with rapid automatic self-recharge. |
-| Ghost Legion assault set | Suit plus matching helmet: 80 melee/bullet/laser/energy protection, no slowdown. Not space-rated. |
+| Red Verdict | An unmarked hilt concealing a crimson energy blade; activate it before entering combat. |
+| Crimson Bulwark | A layered hardlight shield that can turn aside incoming fire and reflect eligible energy shots. Overwhelming attacks bypass it. |
+| Blackstar Carbine | A restricted laser carbine whose internal power system replenishes its charge between engagements. |
+| Ghost Legion assault set | Flexible black assault plates with a matching helmet, built for protected movement through confined decks. Not space-rated. |
 | Skeleton Protocol | Unlimited ranged emag supporting normal doors and machines. Hacking is destructive and still uses each target's normal emag handling. |
 | Phantom Relay | Chameleon projector with immediate reuse after disruption. Contact and attacks still break the disguise. |
 
@@ -96,14 +102,14 @@ dust and a bluespace shimmer; the completed offer stays claimable at the console
 Six failed exit checks, five seconds apart, fail a blocked deployment. Abandonment
 and reward collection clean up the mission-owned pod, enemies, and timers.
 
-Mythical rewards retain existing item abilities and add these stronger stats:
+The recovered Necropolis relics retain their familiar handling and abilities:
 
-- **Worldsplitter:** 40 blade force and 60% block chance.
-- **Aegis of the Undying:** 1,000 emergency healing, one-minute recharge.
-- **Architect's Hand:** omnitool with a 0.02 tool-time multiplier.
-- **Tempest Sovereign:** twelve lightning charges, five-second charging.
-- **Sovereign's Sceptre:** 60 melee force with Hierophant blast/teleport abilities.
-- **Beastbane:** 35 closed/50 open saw force, plus 60 against mining fauna/bosses.
+- **Worldsplitter:** A resonant blade edged with a pale seam of light. Wield it in both hands to command its sweeping cuts.
+- **Aegis of the Undying:** Ancient armour that releases restorative warmth when its bearer falters, then rests before intervening again.
+- **Architect's Hand:** A seamless instrument that unfolds into the selected tool. Use it in hand to change modes.
+- **Tempest Sovereign:** A staff carrying a captive storm. Call lightning or disperse hostile weather, then let its reserves gather again.
+- **Sovereign's Sceptre:** A violet geometric relic that commands Hierophant blasts and a linked teleport beacon.
+- **Beastbane:** A folding hunter's saw, etched with old quarry marks and made to bite into plated hides.
 
 ## Necropolis Breach
 

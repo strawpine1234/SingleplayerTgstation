@@ -15,6 +15,8 @@ type Mission = {
   kind: string;
   title: string;
   description: string;
+  issuer: string;
+  orders: string[];
   difficulty: number;
   reward_theme: string;
   rewards: { id: string; name: string; description: string }[];
@@ -42,16 +44,17 @@ export const ExpeditionConsole = () => {
   const { act, data } = useBackend<Data>();
   const { active, offers, status, completed, cooldown } = data;
   return (
-    <Window width={650} height={720} title="Expedition Mission Console">
+    <Window width={650} height={720} title="Central Command Assignments">
       <Window.Content scrollable>
         <NoticeBox>{status}</NoticeBox>
-        <Section title={`Expedition Board — ${completed} completed`}>
+        <Section title={`Central Command Tasking — ${completed} completed`}>
           <Box>
-            Travel using the mining shuttle or your usual mining transport.
-            Bring a GPS and protection for the mining planet. Sites are deployed
-            in Lavaland wilderness or the ice moon underground; boarding sieges
-            and Necropolis breaches take place on the station. All consoles
-            share one active expedition. Rewards arrive beside the console.
+            Review your orders and prepare before acknowledging an assignment.
+            Field operations require a GPS, suitable protection, and your own
+            return transport. Station defence orders provide a room and tracking
+            signal when contact is confirmed. All terminals share one active
+            assignment. Command releases one listed requisition on completion;
+            collect it beside the terminal.
           </Box>
           {cooldown > 0 && (
             <Box mt={1} color="average">
@@ -101,7 +104,7 @@ export const ExpeditionConsole = () => {
               </NoticeBox>
             )}
             {active.state === 'complete' && (
-              <Section title="Choose one reward">
+              <Section title="Central Command Requisition Clearance">
                 <Stack vertical>
                   {active.rewards.map((reward) => (
                     <Stack.Item key={reward.id}>
@@ -129,11 +132,11 @@ export const ExpeditionConsole = () => {
                 icon="ban"
                 onClick={() => act('abandon', { id: active.id })}
               >
-                Abandon Expedition
+                Withdraw from Assignment
               </Button.Confirm>
               <Box mt={1} color="label">
-                Abandonment removes the deployed site and its assigned fauna,
-                then imposes a one-minute departure cooldown.
+                Withdrawal forfeits requisition clearance. Central Command will
+                issue new tasking after one minute.
               </Box>
             </Box>
           </Section>
@@ -146,7 +149,7 @@ export const ExpeditionConsole = () => {
                 disabled={cooldown > 0}
                 onClick={() => act('accept', { id: mission.id })}
               >
-                Accept Expedition
+                Accept Assignment
               </Button>
             </Section>
           ))
@@ -158,8 +161,19 @@ export const ExpeditionConsole = () => {
 
 const MissionDetails = ({ mission }: { mission: Mission }) => (
   <Box mb={2}>
+    <Box mb={1} color="label">
+      Issued by {mission.issuer}
+    </Box>
     <Box mb={1}>{mission.description}</Box>
-    <Box color="good">Reward pool: {mission.reward_theme}</Box>
+    <Box bold mb={1}>
+      Field orders
+    </Box>
+    {mission.orders.map((order, index) => (
+      <Box key={order} mb={1}>
+        {index + 1}. {order}
+      </Box>
+    ))}
+    <Box color="good">Requisition reserve: {mission.reward_theme}</Box>
     <Box color="average">
       Difficulty: {mission.difficulty}/4
       {mission.kind === 'siege' || mission.kind === 'necropolis'
@@ -167,7 +181,8 @@ const MissionDetails = ({ mission }: { mission: Mission }) => (
         : ` · Field work: ${mission.work_seconds} seconds`}
     </Box>
     <Box color="label">
-      Reward choice: {mission.rewards.map((reward) => reward.name).join(', ')}.
+      Authorized selection:{' '}
+      {mission.rewards.map((reward) => reward.name).join(', ')}.
     </Box>
   </Box>
 );
