@@ -40,7 +40,7 @@ Choose one of the three on completion. Unoffered items cannot be claimed.
 | 1 | Linked warp cubes; Immortality Talisman; Rapid Repeater design disk; wisp lantern; Book of Babel; linked paradox bags |
 | 2 | Resurrection crystal; Eye of God; Hierophant club; cleaving saw; Rod of Asclepius; flight potion |
 | 3 | High-frequency blade; godslayer armour; omnitool; divine vocal cords; berserker armour; staff of storms |
-| 4 (general mythical pool) | Worldsplitter; Aegis of the Undying; Architect's Hand; Tempest Sovereign; Sovereign's Sceptre; Beastbane |
+| 4 (general mythical pool) | Worldsplitter; Aegis of the Undying; Vox of the Necropolis; Tempest Sovereign; Sovereign's Sceptre; Beastbane |
 
 Tier-four missions can select their own exclusive reward pool. The existing
 boarding-pod siege is now titled **Syndicate Breach Raid** and draws three of
@@ -106,12 +106,23 @@ The recovered Necropolis relics retain their familiar handling and abilities:
 
 - **Worldsplitter:** A resonant blade edged with a pale seam of light. Wield it in both hands to command its sweeping cuts.
 - **Aegis of the Undying:** Ancient armour that releases restorative warmth when its bearer falters, then rests before intervening again.
-- **Architect's Hand:** A seamless instrument that unfolds into the selected tool. Use it in hand to change modes.
+- **Vox of the Necropolis:** Ash-encrusted vocal cords carrying an ancient decree. Surgically install them, then use Voice of God to command nearby organic minds. The speaker alone is spared.
 - **Tempest Sovereign:** A staff carrying a captive storm. Call lightning or disperse hostile weather, then let its reserves gather again.
 - **Sovereign's Sceptre:** A violet geometric relic that commands Hierophant blasts and a linked teleport beacon.
 - **Beastbane:** A folding hunter's saw, etched with old quarry marks and made to bite into plated hides.
 
 ## Necropolis Breach
+
+Vox of the Necropolis replaces Architect's Hand in the general mythical pool.
+It uses the normal divine-vocal-cord commands and cooldowns with a threefold
+power multiplier. Resonance reaches living organic targets within eight tiles
+and line of effect, including humans, pets, and monsters, regardless of hearing
+or holy/mind wards. HALT and knockdown commands also bypass ordinary stun
+immunity. Robots, nonorganic entities, corpses, and the speaker are excluded,
+even when a name or job is specified. Commands requiring particular anatomy
+(such as vomiting) still require that anatomy; fixed actions do not acquire new
+effects. Administrator godmode remains respected. Item descriptions use lore
+and handling guidance rather than upgrade statistics.
 
 The second Tier 4 station-defense mission uses the **original** six mythical
 relics listed above. As usual, three distinct choices are shown before acceptance
