@@ -301,10 +301,10 @@
 		var/size = mission.get_station_wave_size(rand(1, 3))
 		TEST_ASSERT(size >= 2 && size <= 4, "Each reinforcement wave must contain 2-4 xenomorphs.")
 		var/mob_type = mission.get_station_wave_mob(1, size)
-		TEST_ASSERT(mob_type in list(/mob/living/basic/alien, /mob/living/basic/alien/drone, /mob/living/basic/alien/sentinel), "Reinforcements must use the non-queen whitelist.")
+		TEST_ASSERT(mob_type in list(/mob/living/basic/alien/expedition_hunter, /mob/living/basic/alien/drone/expedition, /mob/living/basic/alien/sentinel/expedition), "Reinforcements must use the non-queen whitelist.")
 	TEST_ASSERT_EQUAL(mission.get_station_wave_size(4), 0, "There must be no fourth reinforcement wave.")
 	mission.state = "active"
-	var/mob/living/basic/alien/queen/queen = allocate(/mob/living/basic/alien/queen, run_loc_floor_bottom_left)
+	var/mob/living/basic/alien/queen/expedition/queen = allocate(/mob/living/basic/alien/queen/expedition, run_loc_floor_bottom_left)
 	mission.track_station_hostile(queen)
 	TEST_ASSERT_EQUAL(mission.target_count, 1, "The initial queen must count toward containment.")
 	TEST_ASSERT(!queen.can_lay_eggs && !queen.can_plant_weeds, "Mission aliens must not create untracked infestation sources.")
@@ -330,3 +330,25 @@
 	TEST_ASSERT_NULL(board.active, "Closing containment must free the board.")
 	TEST_ASSERT(!board.finish(old_id), "Duplicate completion must be rejected.")
 	qdel(board)
+
+/// Check the actual mission sprite files/states, including large queen and visible burrow art.
+/datum/unit_test/expedition_xenomorph_sprites
+
+/datum/unit_test/expedition_xenomorph_sprites/Run()
+	var/list/types = list(/mob/living/basic/alien/expedition_hunter, /mob/living/basic/alien/drone/expedition, /mob/living/basic/alien/sentinel/expedition, /mob/living/basic/alien/queen/expedition)
+	var/list/living_states = list()
+	for(var/mob/living/basic/alien/mob_type as anything in types)
+		var/icon_file = initial(mob_type.icon)
+		var/living_state = initial(mob_type.icon_living)
+		TEST_ASSERT(living_state in icon_states(icon_file), "Every mission caste must have a valid living sprite.")
+		TEST_ASSERT(initial(mob_type.icon_dead) in icon_states(icon_file), "Every mission caste must have a valid dead sprite.")
+		TEST_ASSERT(!(living_state in living_states), "Every mission caste must use a distinct sprite state.")
+		living_states += living_state
+	var/icon/queen_icon = icon('icons/mob/expedition/queen.dmi', "queen")
+	var/icon/hunter_icon = icon('icons/mob/expedition/xenomorphs.dmi', "hunter")
+	TEST_ASSERT(queen_icon.Width() > hunter_icon.Width(), "The queen must have a larger sprite than regular xenomorphs.")
+	var/obj/structure/expedition_beacon/siege/xenomorph/burrow = allocate(/obj/structure/expedition_beacon/siege/xenomorph, run_loc_floor_bottom_left)
+	TEST_ASSERT(burrow.icon_state in icon_states(burrow.icon), "The burrow must use its own valid sprite.")
+	TEST_ASSERT_EQUAL(burrow.invisibility, 0, "The burrow must remain visible.")
+	TEST_ASSERT_EQUAL(burrow.alpha, 255, "The burrow must remain opaque.")
+	TEST_ASSERT_EQUAL(length(burrow.overlays), 0, "The burrow must not display supply-pod overlays.")

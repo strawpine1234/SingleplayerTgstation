@@ -226,7 +226,7 @@ GLOBAL_DATUM_INIT(solo_expeditions, /datum/solo_expedition_board, new)
 /// Only finite-spawn fauna are used: none can generate untracked broods or extra waves.
 /datum/solo_expedition/proc/get_station_wave_mob(index, wave_size)
 	if(kind == "xenomorph")
-		return pick(/mob/living/basic/alien, /mob/living/basic/alien/drone, /mob/living/basic/alien/sentinel)
+		return pick(/mob/living/basic/alien/expedition_hunter, /mob/living/basic/alien/drone/expedition, /mob/living/basic/alien/sentinel/expedition)
 	if(kind == "necropolis")
 		return pick(/mob/living/basic/mining/watcher, /mob/living/basic/mining/goliath, /mob/living/basic/mining/basilisk)
 	return index == wave_size ? /mob/living/carbon/human/expedition_boarder/gunner : /mob/living/carbon/human/expedition_boarder
@@ -376,7 +376,7 @@ GLOBAL_DATUM_INIT(solo_expeditions, /datum/solo_expedition_board, new)
 		for(var/turf/open/floor/exit in orange(1, site))
 			if(is_station_level(exit.z) && !exit.is_blocked_turf())
 				exits += exit
-		var/mob/living/basic/alien/queen/queen = new(pick(exits))
+		var/mob/living/basic/alien/queen/expedition/queen = new(pick(exits))
 		track_station_hostile(queen)
 		beacon.visible_message(span_danger("A xenomorph burrow opens and a queen emerges! Reinforcements will arrive in 30 seconds!"))
 		wave_timer = addtimer(CALLBACK(src, PROC_REF(dispatch_siege_wave)), 30 SECONDS, TIMER_STOPPABLE)
@@ -727,18 +727,51 @@ GLOBAL_DATUM_INIT(solo_expeditions, /datum/solo_expedition_board, new)
 /obj/structure/expedition_beacon/siege/xenomorph
 	name = "xenomorph burrow"
 	desc = "A xenomorph tunnel through the decking. After its first reinforcement wave, interact for twelve seconds to seal it, or destroy it."
-	icon = 'icons/mob/simple/animal.dmi'
-	icon_state = "hole"
-	pixel_x = 0
+	icon = 'icons/mob/expedition/burrow.dmi'
+	icon_state = "burrow"
+	pixel_x = -16
+	pixel_y = -8
 
 /obj/structure/expedition_beacon/siege/xenomorph/Initialize(mapload, datum/solo_expedition/owner)
 	. = ..()
 	if(mission)
 		name = "xenomorph burrow ([mission.gps_tag])"
-	new /obj/effect/temp_visual/small_smoke(get_turf(src))
+	// No emergence animation or particles: the burrow is a single static frame.
 
 /obj/structure/expedition_beacon/siege/xenomorph/update_overlays()
 	return list()
+
+/// Constant low green light makes the static rim readable in dark rooms.
+/obj/structure/expedition_beacon/siege/xenomorph/update_icon_state()
+	. = ..()
+	set_light(2, 0.7, LIGHT_COLOR_GREEN)
+
+/// Mission-specific sprites leave ordinary aliens and their AI/combat statistics unchanged.
+/mob/living/basic/alien/expedition_hunter
+	icon = 'icons/mob/expedition/xenomorphs.dmi'
+	icon_state = "hunter"
+	icon_living = "hunter"
+	icon_dead = "hunter_dead"
+
+/mob/living/basic/alien/drone/expedition
+	icon = 'icons/mob/expedition/xenomorphs.dmi'
+	icon_state = "drone"
+	icon_living = "drone"
+	icon_dead = "drone_dead"
+
+/mob/living/basic/alien/sentinel/expedition
+	icon = 'icons/mob/expedition/xenomorphs.dmi'
+	icon_state = "sentinel"
+	icon_living = "sentinel"
+	icon_dead = "sentinel_dead"
+
+/mob/living/basic/alien/queen/expedition
+	icon = 'icons/mob/expedition/queen.dmi'
+	icon_state = "queen"
+	icon_living = "queen"
+	icon_dead = "queen_dead"
+	pixel_x = -16
+	mob_size = MOB_SIZE_LARGE
 
 /// Harmless visual dust: no smoke chemistry, damage, or teleportation of nearby entities.
 /obj/effect/temp_visual/small_smoke/expedition_bluespace_dust
