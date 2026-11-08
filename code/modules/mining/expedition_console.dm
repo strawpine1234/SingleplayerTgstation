@@ -1,7 +1,7 @@
 /// One round-wide board: rebuilding a console cannot reset a mission or duplicate rewards.
 GLOBAL_DATUM_INIT(solo_expeditions, /datum/solo_expedition_board, new)
 
-/// Three offers and one active expedition, shared by all expedition consoles.
+/// Five category offers and one active expedition, shared by all expedition consoles.
 /datum/solo_expedition_board
 	/// Current randomized offers.
 	var/list/offers = list()
@@ -25,14 +25,17 @@ GLOBAL_DATUM_INIT(solo_expeditions, /datum/solo_expedition_board, new)
 	QDEL_LIST(offers)
 	return ..()
 
-/// Offer both tier-four station breaches alongside one randomized wilderness expedition.
+/// Keep one randomized wilderness offer per tier and one offer for each station breach.
 /datum/solo_expedition_board/proc/roll_offers()
 	if(active)
 		return FALSE
 	QDEL_LIST(offers)
 	offers = list()
-	var/list/kinds = shuffle(list("siege", "necropolis", pick("survey", "salvage", "hunt")))
-	for(var/kind in kinds)
+	for(var/tier in 1 to 3)
+		serial++
+		var/datum/solo_expedition/mission = new(pick("survey", "salvage", "hunt"), "[serial]", tier)
+		offers += mission
+	for(var/kind in list("siege", "necropolis"))
 		serial++
 		var/datum/solo_expedition/mission = new(kind, "[serial]")
 		offers += mission
@@ -129,11 +132,11 @@ GLOBAL_DATUM_INIT(solo_expeditions, /datum/solo_expedition_board, new)
 	/// Number of blocked deployment retries, bounded to avoid endless missions.
 	var/blocked_retries = 0
 
-/datum/solo_expedition/New(mission_kind, mission_id)
+/datum/solo_expedition/New(mission_kind, mission_id, mission_tier)
 	. = ..()
 	kind = mission_kind
 	id = mission_id
-	difficulty = is_station_defense() ? 4 : rand(1, 3)
+	difficulty = is_station_defense() ? 4 : (isnum(mission_tier) ? clamp(round(mission_tier), 1, 3) : rand(1, 3))
 	configure_rewards()
 	work_time = (10 + difficulty * 5) SECONDS
 	gps_tag = "EXP-[id]"

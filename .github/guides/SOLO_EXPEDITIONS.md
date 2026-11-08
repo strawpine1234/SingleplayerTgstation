@@ -5,8 +5,15 @@ imprinter. It is available from the starter **Material Processing** node. Build
 it using the normal computer frame construction process. For admin testing,
 spawn `/obj/machinery/computer/expedition`.
 
-Every board has three offers in random order: one Syndicate Breach Raid, one
-Necropolis Breach, and one wilderness mission drawn from survey, salvage, and hunt.
+The console has five tabs: **T1 Expedition**, **T2 Expedition**, **T3 Expedition**,
+**Syndicate Signal**, and **Lavaland Anomalies**. Each expedition tier has one
+randomized survey, salvage, or hunt offer. Syndicate Signal contains the tier-four
+Syndicate Breach Raid; Lavaland Anomalies contains the tier-four Necropolis Breach.
+All five offers refresh together after a reward is claimed or an assignment is
+withdrawn. Browsing a tab does not reroll its mission or rewards. While an
+assignment is active, other tabs remain readable and a **View Active Assignment**
+button returns to its progress and reward controls. Only one assignment can be
+active at a time.
 Central Command's Special Assignments Office issues every mission. Each brief
 explains the assignment and provides field orders, tracking details, and an
 authorized requisition reserve. Read the orders and prepare before accepting;
@@ -28,7 +35,7 @@ For wilderness assignments:
    that must be used on a console. Hunts require killing the specific tagged
    fauna before verifying the beacon. Native fauna do not count.
 4. Return to a powered console and choose **one** of the three advertised rare
-   rewards. Rewards appear beside the console and three fresh offers are generated.
+   rewards. Rewards appear beside the console and all five offers are refreshed.
 
 Each of the four tiers has a separate pool of six artifacts. Every offer draws three distinct
 choices from its pool, without replacement. Those choices are locked when the

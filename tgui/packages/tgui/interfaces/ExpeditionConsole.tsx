@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import {
   Box,
   Button,
@@ -5,6 +6,7 @@ import {
   NoticeBox,
   Section,
   Stack,
+  Tabs,
 } from 'tgui-core/components';
 
 import { useBackend } from '../backend';
@@ -40,11 +42,37 @@ type Data = {
   offers: Mission[];
 };
 
+const missionTabs = [
+  { id: 't1', label: 'T1 Expedition' },
+  { id: 't2', label: 'T2 Expedition' },
+  { id: 't3', label: 'T3 Expedition' },
+  { id: 'syndicate', label: 'Syndicate Signal' },
+  { id: 'lavaland', label: 'Lavaland Anomalies' },
+] as const;
+
+const missionTab = (mission: Mission) => {
+  if (mission.kind === 'siege') {
+    return 'syndicate';
+  }
+  if (mission.kind === 'necropolis') {
+    return 'lavaland';
+  }
+  return `t${mission.difficulty}`;
+};
+
 export const ExpeditionConsole = () => {
   const { act, data } = useBackend<Data>();
   const { active, offers, status, completed, cooldown } = data;
+  const [selectedTab, setSelectedTab] = useState(
+    active ? missionTab(active) : 't1',
+  );
+  const showActive = active && missionTab(active) === selectedTab;
+  const visibleOffers = offers.filter(
+    (mission) =>
+      missionTab(mission) === selectedTab && mission.id !== active?.id,
+  );
   return (
-    <Window width={650} height={720} title="Central Command Assignments">
+    <Window width={780} height={720} title="Central Command Assignments">
       <Window.Content scrollable>
         <NoticeBox>{status}</NoticeBox>
         <Section title={`Central Command Tasking — ${completed} completed`}>
@@ -62,7 +90,29 @@ export const ExpeditionConsole = () => {
             </Box>
           )}
         </Section>
-        {active ? (
+        <Tabs fluid>
+          {missionTabs.map((tab) => (
+            <Tabs.Tab
+              key={tab.id}
+              selected={selectedTab === tab.id}
+              onClick={() => setSelectedTab(tab.id)}
+            >
+              {tab.label}
+            </Tabs.Tab>
+          ))}
+        </Tabs>
+        {active && !showActive && (
+          <NoticeBox>
+            Active assignment: {active.title}. Finish or withdraw before
+            accepting another assignment.
+            <Box mt={1}>
+              <Button onClick={() => setSelectedTab(missionTab(active))}>
+                View Active Assignment
+              </Button>
+            </Box>
+          </NoticeBox>
+        )}
+        {showActive ? (
           <Section title={active.title}>
             <MissionDetails mission={active} />
             <LabeledList>
@@ -141,12 +191,12 @@ export const ExpeditionConsole = () => {
             </Box>
           </Section>
         ) : (
-          offers.map((mission) => (
+          visibleOffers.map((mission) => (
             <Section key={mission.id} title={mission.title}>
               <MissionDetails mission={mission} />
               <Button
                 icon="rocket"
-                disabled={cooldown > 0}
+                disabled={!!active || cooldown > 0}
                 onClick={() => act('accept', { id: mission.id })}
               >
                 Accept Assignment

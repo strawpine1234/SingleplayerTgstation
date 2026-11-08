@@ -3,16 +3,23 @@
 
 /datum/unit_test/expedition_console/Run()
 	var/datum/solo_expedition_board/board = new
-	TEST_ASSERT_EQUAL(length(board.offers), 3, "Exactly three expeditions must be offered.")
+	TEST_ASSERT_EQUAL(length(board.offers), 5, "Each of the five mission tabs must have an offer.")
 	var/list/kinds = list()
+	var/list/wilderness_tiers = list()
 	for(var/datum/solo_expedition/mission as anything in board.offers)
 		kinds |= mission.kind
 		TEST_ASSERT(mission.difficulty >= 1 && mission.difficulty <= 4, "Difficulty must be within the advertised range.")
+		if(mission.is_station_defense())
+			TEST_ASSERT_EQUAL(mission.difficulty, 4, "Station defense missions must remain tier four.")
+		else
+			TEST_ASSERT(mission.difficulty in list(1, 2, 3), "Wilderness missions must belong to one of the three expedition tabs.")
+			TEST_ASSERT(!(mission.difficulty in wilderness_tiers), "A wilderness tier must not be offered twice.")
+			wilderness_tiers += mission.difficulty
 		TEST_ASSERT_EQUAL(length(mission.reward_options), 3, "Each offer must draw exactly three rewards.")
 		var/list/pool = mission.get_mission_reward_pool()
 		for(var/reward_id in mission.reward_options)
 			TEST_ASSERT(reward_id in pool, "Rewards must belong to the mission's tier.")
-	TEST_ASSERT_EQUAL(length(kinds), 3, "The board must offer three distinct objective types.")
+	TEST_ASSERT_EQUAL(length(wilderness_tiers), 3, "T1, T2, and T3 must each have a wilderness expedition.")
 	TEST_ASSERT("siege" in kinds, "A siege offer must always be available.")
 	TEST_ASSERT("necropolis" in kinds, "A Necropolis breach must always be available.")
 	TEST_ASSERT(!board.accept_offer("invalid"), "An arbitrary client offer ID must not deploy a mission.")
@@ -37,7 +44,7 @@
 	TEST_ASSERT(board.claim(old_id, chosen_reward, run_loc_floor_bottom_left), "Completed expedition must pay out.")
 	TEST_ASSERT_EQUAL(board.completed, 1, "A successful claim must be recorded once.")
 	TEST_ASSERT(!board.claim(old_id, chosen_reward, run_loc_floor_bottom_left), "Duplicate claims must not pay out.")
-	TEST_ASSERT_EQUAL(length(board.offers), 3, "A reward must generate three fresh offers.")
+	TEST_ASSERT_EQUAL(length(board.offers), 5, "A reward must refresh all five mission tabs.")
 	TEST_ASSERT(!board.accept_offer(old_id), "A stale offer ID must not select a replacement mission.")
 	var/obj/item/payment = locate(reward_type) in run_loc_floor_bottom_left
 	TEST_ASSERT_NOTNULL(payment, "The chosen artifact must be delivered.")
