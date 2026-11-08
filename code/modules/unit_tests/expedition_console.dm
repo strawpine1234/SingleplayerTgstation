@@ -116,3 +116,36 @@
 	TEST_ASSERT(/obj/item/storm_staff/expedition_mythic::max_thunder_charges > /obj/item/storm_staff::max_thunder_charges, "Mythical staff must hold more charges.")
 	TEST_ASSERT(/obj/item/hierophant_club/expedition_mythic::force > /obj/item/hierophant_club::force, "Mythical club must hit harder.")
 	TEST_ASSERT(/obj/item/melee/cleaving_saw/expedition_mythic::open_force > /obj/item/melee/cleaving_saw::open_force, "Mythical saw must hit harder when opened.")
+
+/// Boarders have crew anatomy and persistent corpses, with verified mission death tracking.
+/datum/unit_test/expedition_carbon_boarders
+
+/datum/unit_test/expedition_carbon_boarders/Run()
+	var/mob/living/carbon/human/expedition_boarder/boarder = allocate(/mob/living/carbon/human/expedition_boarder)
+	TEST_ASSERT_NOTNULL(boarder.get_organ_slot(ORGAN_SLOT_BRAIN), "Boarders must have a real brain.")
+	TEST_ASSERT_NOTNULL(boarder.get_organ_slot(ORGAN_SLOT_HEART), "Boarders must have a real heart.")
+	TEST_ASSERT_EQUAL(length(boarder.bodyparts), 6, "Boarders must have normal human limbs.")
+	TEST_ASSERT_NOTNULL(boarder.ai_controller, "Carbon boarders must retain hostile AI.")
+	TEST_ASSERT(length(boarder.ai_controller.behavior_nodes), "Hostile AI must build its combat tree.")
+	boarder.adjust_brute_loss(20)
+	boarder.adjust_fire_loss(10)
+	boarder.adjust_oxy_loss(5)
+	TEST_ASSERT(boarder.get_brute_loss() > 0, "Boarders must take normal bodypart damage.")
+	TEST_ASSERT(boarder.get_fire_loss() > 0, "Boarders must take burn damage.")
+	TEST_ASSERT(boarder.get_oxy_loss() > 0, "Boarders must take oxygen damage.")
+	var/datum/solo_expedition/mission = new("siege", "carbon_test")
+	mission.state = "active"
+	mission.waves_sent = 1
+	mission.target_count = 1
+	mission.deployment_disabled = TRUE
+	mission.guards += boarder
+	mission.living_guards += boarder
+	// Register from the mission so the real death signal updates the correct owner.
+	mission.RegisterSignal(boarder, COMSIG_LIVING_DEATH, TYPE_PROC_REF(/datum/solo_expedition, target_died))
+	boarder.death(FALSE)
+	TEST_ASSERT_EQUAL(boarder.stat, DEAD, "Lethal injury must produce a normal dead human.")
+	TEST_ASSERT(!QDELETED(boarder), "Death must not delete the body.")
+	TEST_ASSERT_EQUAL(mission.state, "complete", "Real carbon death must count toward mission completion.")
+	qdel(mission)
+	TEST_ASSERT(!QDELETED(boarder), "Mission cleanup must preserve a dead boarder's body.")
+	TEST_ASSERT_NOTNULL(boarder.get_organ_slot(ORGAN_SLOT_BRAIN), "The corpse must retain its organs.")

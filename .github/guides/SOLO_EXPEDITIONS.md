@@ -53,6 +53,20 @@ You have 45 seconds before the first two raiders deploy. Another two arrive
 gunner and the remaining enemies use melee attacks. There are at most seven
 enemies; normal AI lets them move away from the pod and fight on the station.
 
+The pod has a large Syndicate drop-pod hull, insignia and closed hatch before
+deployment. The hatch opens after wave one. Red emissive status lights turn blue
+when deployment is disabled or exhausted.
+
+Boarders are actual human NPCs, with normal bodyparts, organs, blood, wounds,
+armour, pain, oxygen/toxin damage, unconsciousness, critical states and death.
+Melee raiders carry survival knives; gunners carry ordinary pistols with finite
+ammunition. Their carbon-compatible AI uses normal item attacks and respects
+team membership. Unconscious or critically injured targets are not selected for
+further attacks. Their armour and weapons can be removed like a crewmember's.
+Death leaves a normal corpse, and mission cleanup preserves dead boarders for
+looting, surgery, or revival. Living mission-owned boarders are still cleaned up
+on abandonment. This replaces the earlier simplified, disappearing troopers.
+
 After the first wave, interact with the pod for an uninterrupted twelve seconds
 to disable reinforcements, or destroy its 300-integrity hull. Killing the pod
 before the first wave fails the mission. Once deployment has stopped (including
