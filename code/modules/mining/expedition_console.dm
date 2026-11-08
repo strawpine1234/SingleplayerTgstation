@@ -25,13 +25,15 @@ GLOBAL_DATUM_INIT(solo_expeditions, /datum/solo_expedition_board, new)
 	QDEL_LIST(offers)
 	return ..()
 
-/// Replace spent offers with one survey, salvage, and hunt in random order.
+/// Always offer the siege alongside two different wilderness missions.
 /datum/solo_expedition_board/proc/roll_offers()
 	if(active)
 		return FALSE
 	QDEL_LIST(offers)
 	offers = list()
-	for(var/kind in shuffle(list("survey", "salvage", "hunt")))
+	var/list/wilderness = shuffle(list("survey", "salvage", "hunt"))
+	var/list/kinds = shuffle(list("siege", wilderness[1], wilderness[2]))
+	for(var/kind in kinds)
 		serial++
 		var/datum/solo_expedition/mission = new(kind, "[serial]")
 		offers += mission
@@ -47,7 +49,7 @@ GLOBAL_DATUM_INIT(solo_expeditions, /datum/solo_expedition_board, new)
 		active = mission
 		if(!mission.deploy())
 			active = null
-			status = "No clear mining wilderness site found. Try again after the mining map has loaded."
+			status = "No clear site found for this mission. Check that the station or mining map is available."
 			return FALSE
 		status = "Expedition accepted. Follow the GPS signal [mission.gps_tag], then return here for your reward."
 		return TRUE
@@ -85,13 +87,13 @@ GLOBAL_DATUM_INIT(solo_expeditions, /datum/solo_expedition_board, new)
 /datum/solo_expedition
 	/// Unique offer identifier, supplied by the board.
 	var/id
-	/// Survey, salvage, or hunt.
+	/// Survey, salvage, hunt, or station boarding-pod siege.
 	var/kind
 	/// Offer title.
 	var/title
 	/// Player-facing objective instructions.
 	var/description
-	/// Difficulty from one to three.
+	/// Difficulty from one to four; sieges exclusively award mythical tier-four loot.
 	var/difficulty
 	/// Server-owned reward choices, fixed when the offer is generated.
 	var/list/reward_options = list()
@@ -113,17 +115,28 @@ GLOBAL_DATUM_INIT(solo_expeditions, /datum/solo_expedition_board, new)
 	var/kills = 0
 	/// Number of fauna originally deployed.
 	var/target_count = 0
+	/// Number of siege waves dispatched (maximum three).
+	var/waves_sent = 0
+	/// TRUE once disabled by the player or exhausted after the final wave.
+	var/deployment_disabled = FALSE
+	/// The pending siege-wave timer, cancelled on cleanup or sabotage.
+	var/wave_timer
+	/// Number of blocked deployment retries, bounded to avoid endless missions.
+	var/blocked_retries = 0
 
 /datum/solo_expedition/New(mission_kind, mission_id)
 	. = ..()
 	kind = mission_kind
 	id = mission_id
-	difficulty = rand(1, 3)
+	difficulty = kind == "siege" ? 4 : rand(1, 3)
 	configure_rewards()
 	work_time = (10 + difficulty * 5) SECONDS
 	gps_tag = "EXP-[id]"
 	var/site_name = pick("Cinder", "Echo", "Horizon", "Pioneer", "Wayfarer", "Prospector")
 	switch(kind)
+		if("siege")
+			title = "[site_name] boarding pod siege"
+			description = "A hostile pod will dock at a clear station location. You have 45 seconds to prepare, followed by at most three waves (2, 2, and 3 boarders), 40 seconds apart. Disable its deployment controls with a 12-second interaction after the first wave, or destroy it, to stop reinforcements. Eliminate every deployed boarder to claim a mythical reward. Destroying the pod before any boarders deploy fails the mission."
 		if("survey")
 			title = "[site_name] geological survey"
 			description = "Reach the beacon and remain beside it while collecting a geological survey. Return to a console afterward. No additional guards are deployed; native wildlife and weather remain dangerous."
@@ -177,9 +190,21 @@ GLOBAL_DATUM_INIT(solo_expeditions, /datum/solo_expedition_board, new)
 				"berserker" = list("name" = "Berserker armour", "description" = "Rare rage-fuelled armour; can be empowered with drake remains. Not initially spaceworthy.", "type" = /obj/item/clothing/suit/hooded/berserker),
 				"storms" = list("name" = "Staff of storms", "description" = "Legion's lightning staff, with its normal storm and thunder abilities.", "type" = /obj/item/storm_staff),
 			)
+		if(4)
+			return list(
+				"mythic_blade" = list("name" = "Worldsplitter", "description" = "Mythical high-frequency blade: 40 force and 60% block chance instead of 10 and 25%.", "type" = /obj/item/highfrequencyblade/expedition_mythic),
+				"mythic_armour" = list("name" = "Aegis of the Undying", "description" = "Godslayer armour with 1,000 emergency healing and a one-minute cooldown instead of ten minutes.", "type" = /obj/item/clothing/suit/hooded/cloak/godslayer/expedition_mythic),
+				"mythic_tool" = list("name" = "Architect's Hand", "description" = "Mythical omnitool with a 0.02 tool-time multiplier, five times faster than the original.", "type" = /obj/item/debug/omnitool/expedition_mythic),
+				"mythic_staff" = list("name" = "Tempest Sovereign", "description" = "Storm staff with twelve lightning charges and five-second charging instead of three charges and fifteen seconds.", "type" = /obj/item/storm_staff/expedition_mythic),
+				"mythic_club" = list("name" = "Sovereign's Sceptre", "description" = "Hierophant club with 60 melee force, four times the original, retaining its teleport and blast abilities.", "type" = /obj/item/hierophant_club/expedition_mythic),
+				"mythic_saw" = list("name" = "Beastbane", "description" = "Mythical cleaving saw: 35 closed force, 50 open force, and 60 bonus force against mining fauna and bosses.", "type" = /obj/item/melee/cleaving_saw/expedition_mythic),
+			)
 	return list()
 
 /datum/solo_expedition/Destroy()
+	if(wave_timer)
+		deltimer(wave_timer)
+		wave_timer = null
 	// Unregister first: deleting targets during cleanup must not report failure or kills.
 	for(var/mob/living/guard as anything in guards)
 		if(!QDELETED(guard))
@@ -231,10 +256,15 @@ GLOBAL_DATUM_INIT(solo_expeditions, /datum/solo_expedition_board, new)
 /datum/solo_expedition/proc/deploy()
 	if(state != "offered")
 		return FALSE
-	var/turf/site = find_site()
+	var/turf/site = kind == "siege" ? find_siege_site() : find_site()
 	if(!site)
 		return FALSE
 	state = "active"
+	if(kind == "siege")
+		beacon = new /obj/structure/expedition_beacon/siege(site, src)
+		beacon.visible_message(span_danger("A hostile boarding pod docks! Its deployment bay will open in 45 seconds!"))
+		wave_timer = addtimer(CALLBACK(src, PROC_REF(dispatch_siege_wave)), 45 SECONDS, TIMER_STOPPABLE)
+		return TRUE
 	beacon = new(site, src)
 	if(kind == "survey")
 		return TRUE
@@ -261,14 +291,87 @@ GLOBAL_DATUM_INIT(solo_expeditions, /datum/solo_expedition_board, new)
 	living_guards -= source
 	kills++
 	UnregisterSignal(source, list(COMSIG_LIVING_DEATH, COMSIG_QDELETING))
+	check_siege_completion()
 
 /// A missing live hunt target is a failure, never a free kill (e.g. a mining map reset).
 /datum/solo_expedition/proc/target_deleted(mob/living/source)
 	SIGNAL_HANDLER
 	living_guards -= source
 	guards -= source
-	if(kind == "hunt" && state == "active")
+	if((kind == "hunt" || kind == "siege") && state == "active")
 		state = "failed"
+		stop_siege_deployment()
+
+/// Find an unoccupied station floor with at least three free deployment exits.
+/datum/solo_expedition/proc/find_siege_site()
+	if(!length(GLOB.the_station_areas))
+		return null
+	for(var/attempt in 1 to 30)
+		var/turf/open/floor/site = get_safe_random_station_turf()
+		if(!istype(site) || !is_station_level(site.z) || site.is_blocked_turf())
+			continue
+		var/occupied = FALSE
+		for(var/mob/living/nearby in range(5, site))
+			occupied = TRUE
+			break
+		if(occupied)
+			continue
+		var/free_exits = 0
+		for(var/turf/open/floor/exit in orange(1, site))
+			if(is_station_level(exit.z) && !exit.is_blocked_turf())
+				free_exits++
+		if(free_exits >= 3)
+			return site
+	return null
+
+/// Dispatch at most seven boarders in three waves. Blocked exits get bounded retries.
+/datum/solo_expedition/proc/dispatch_siege_wave()
+	wave_timer = null
+	if(kind != "siege" || state != "active" || deployment_disabled || waves_sent >= 3 || QDELETED(beacon))
+		return FALSE
+	var/list/exits = list()
+	for(var/turf/open/floor/exit in orange(1, beacon))
+		if(is_station_level(exit.z) && !exit.is_blocked_turf())
+			exits += exit
+	var/wave_size = waves_sent == 2 ? 3 : 2
+	if(length(exits) < wave_size)
+		blocked_retries++
+		if(blocked_retries >= 6)
+			state = "failed"
+			stop_siege_deployment()
+		else
+			wave_timer = addtimer(CALLBACK(src, PROC_REF(dispatch_siege_wave)), 5 SECONDS, TIMER_STOPPABLE)
+		return FALSE
+	blocked_retries = 0
+	waves_sent++
+	for(var/index in 1 to wave_size)
+		var/mob_type = index == wave_size ? /mob/living/basic/trooper/syndicate/ranged/expedition_boarder : /mob/living/basic/trooper/syndicate/melee/expedition_boarder
+		var/mob/living/boarder = new mob_type(pick_n_take(exits))
+		boarder.name = "[boarder.name] ([gps_tag])"
+		guards += boarder
+		living_guards += boarder
+		target_count++
+		RegisterSignal(boarder, COMSIG_LIVING_DEATH, PROC_REF(target_died))
+		RegisterSignal(boarder, COMSIG_QDELETING, PROC_REF(target_deleted))
+	beacon.visible_message(span_danger("[beacon] deploys boarding wave [waves_sent] of 3!"))
+	if(waves_sent >= 3)
+		stop_siege_deployment()
+	else
+		wave_timer = addtimer(CALLBACK(src, PROC_REF(dispatch_siege_wave)), 40 SECONDS, TIMER_STOPPABLE)
+	return TRUE
+
+/// Stop reinforcements; spawned boarders must still be defeated.
+/datum/solo_expedition/proc/stop_siege_deployment()
+	deployment_disabled = TRUE
+	if(wave_timer)
+		deltimer(wave_timer)
+		wave_timer = null
+	check_siege_completion()
+
+/// Completion cannot occur until at least one wave has deployed and all targets are dead.
+/datum/solo_expedition/proc/check_siege_completion()
+	if(kind == "siege" && state == "active" && deployment_disabled && waves_sent > 0 && target_count > 0 && !length(living_guards) && kills == target_count)
+		state = "complete"
 
 /// Serialize only player-facing data; no client-provided reward values or completion states.
 /datum/solo_expedition/proc/get_mission_data()
@@ -290,6 +393,8 @@ GLOBAL_DATUM_INIT(solo_expeditions, /datum/solo_expedition_board, new)
 		"coordinates" = site ? "[site.x], [site.y], [site.z]" : null,
 		"kills" = kills,
 		"targets" = target_count,
+		"waves" = waves_sent,
+		"deployment_disabled" = deployment_disabled,
 		"recovered" = !isnull(evidence),
 	)
 
@@ -356,6 +461,109 @@ GLOBAL_DATUM_INIT(solo_expeditions, /datum/solo_expedition_board, new)
 	else
 		mission.state = "complete"
 		to_chat(user, span_notice("Field work complete. Return to an expedition console and choose your reward."))
+
+/// A destructible siege deployment system; sabotage and destruction stop future waves.
+/obj/structure/expedition_beacon/siege
+	name = "hostile boarding pod"
+	desc = "A hostile deployment pod. After its first wave, interact with it for twelve seconds to disable reinforcements, or destroy it."
+	icon = 'icons/obj/pipes_n_cables/transit_tube.dmi'
+	icon_state = "pod"
+	density = TRUE
+	max_integrity = 300
+
+/obj/structure/expedition_beacon/siege/Initialize(mapload, datum/solo_expedition/owner)
+	. = ..()
+	if(mission)
+		name = "hostile boarding pod ([mission.gps_tag])"
+	set_light(3, 1, COLOR_RED)
+
+/obj/structure/expedition_beacon/siege/attack_hand(mob/living/user, list/modifiers)
+	if(!mission || mission.state != "active" || working || !ishuman(user) || !user.can_perform_action(src))
+		return
+	if(!mission.waves_sent)
+		balloon_alert(user, "controls sealed until first deployment!")
+		return
+	if(mission.deployment_disabled)
+		balloon_alert(user, "defeat remaining boarders!")
+		return
+	working = TRUE
+	balloon_alert(user, "disabling deployment...")
+	var/success = do_after(user, 12 SECONDS, target = src)
+	if(QDELETED(src))
+		return
+	working = FALSE
+	if(success && mission && mission.state == "active")
+		mission.stop_siege_deployment()
+		visible_message(span_notice("[user] disables [src]'s deployment system!"))
+
+/obj/structure/expedition_beacon/siege/Destroy()
+	if(mission)
+		var/datum/solo_expedition/owner = mission
+		owner.beacon = null
+		mission = null
+		if(owner.state == "active" && !owner.waves_sent)
+			owner.state = "failed"
+		owner.stop_siege_deployment()
+	return ..()
+
+/// Finite siege troops with normal AI, no equipment farming, and moderate health.
+/mob/living/basic/trooper/syndicate/melee/expedition_boarder
+	name = "boarding raider"
+	maxHealth = 80
+	health = 80
+	melee_damage_lower = 12
+	melee_damage_upper = 12
+	corpse = null
+	unsuitable_atmos_damage = 0
+	unsuitable_cold_damage = 0
+	unsuitable_heat_damage = 0
+
+/mob/living/basic/trooper/syndicate/ranged/expedition_boarder
+	name = "boarding gunner"
+	maxHealth = 70
+	health = 70
+	ranged_cooldown = 2.5 SECONDS
+	corpse = null
+	unsuitable_atmos_damage = 0
+	unsuitable_cold_damage = 0
+	unsuitable_heat_damage = 0
+
+/// Mythical artifacts use existing abilities with explicitly stronger statistics.
+/obj/item/highfrequencyblade/expedition_mythic
+	name = "Worldsplitter"
+	desc = "A mythical resonating blade. Four times the normal cutting force and a 60% parry chance."
+	force = 40
+	block_chance = 60
+
+/obj/item/clothing/suit/hooded/cloak/godslayer/expedition_mythic
+	name = "Aegis of the Undying"
+	desc = "Mythical godslayer armour. Emergency healing is doubled and recharges in one minute."
+	heal_amount = 1000
+	effect_cooldown_time = 1 MINUTES
+
+/obj/item/debug/omnitool/expedition_mythic
+	name = "Architect's Hand"
+	desc = "A mythical omnitool with a 0.02 tool-time multiplier. Use it in hand to choose a tool mode."
+	toolspeed = 0.02
+
+/obj/item/storm_staff/expedition_mythic
+	name = "Tempest Sovereign"
+	desc = "A mythical storm staff holding twelve lightning charges, with five-second charging."
+	max_thunder_charges = 12
+	thunder_charges = 12
+	thunder_charge_time = 5 SECONDS
+
+/obj/item/hierophant_club/expedition_mythic
+	name = "Sovereign's Sceptre"
+	desc = "A mythical Hierophant relic. Four times the original melee force, with its familiar blast and teleport powers."
+	force = 60
+
+/obj/item/melee/cleaving_saw/expedition_mythic
+	name = "Beastbane"
+	desc = "A mythical cleaving saw with 35 closed force, 50 open force, and 60 bonus force against mining fauna and bosses."
+	force = 35
+	open_force = 50
+	faction_bonus_force = 60
 
 /// Unique salvage proof, bound to one offer and consumed when submitted.
 /obj/item/expedition_evidence
