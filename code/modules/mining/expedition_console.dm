@@ -134,27 +134,50 @@ GLOBAL_DATUM_INIT(solo_expeditions, /datum/solo_expedition_board, new)
 			title = "[site_name] fauna suppression"
 			description = "Kill the marked expedition fauna, then interact with the beacon to verify the site. Return to a console afterward. Only these assigned targets count."
 
-/// Offer three exceptional items appropriate to the rolled difficulty.
+/// Draw three different rewards once; reopening the UI cannot reroll an offer.
 /datum/solo_expedition/proc/configure_rewards()
-	switch(difficulty)
+	if(length(reward_options))
+		return FALSE
+	var/list/pool = get_reward_pool(difficulty)
+	var/list/remaining_ids = list()
+	for(var/reward_id in pool)
+		remaining_ids += reward_id
+	for(var/index in 1 to min(3, length(remaining_ids)))
+		var/reward_id = pick_n_take(remaining_ids)
+		reward_options[reward_id] = pool[reward_id]
+	return TRUE
+
+/// Separate, non-overlapping artifact pools for the three difficulty tiers.
+/datum/solo_expedition/proc/get_reward_pool(tier)
+	switch(tier)
 		if(1)
-			reward_options = list(
+			return list(
 				"warp" = list("name" = "Linked warp cube pair", "description" = "Two linked cubes for teleporting between their locations. Normal teleport restrictions apply.", "type" = /obj/item/warp_cube/red),
 				"talisman" = list("name" = "Immortality Talisman", "description" = "A rare artifact granting temporary invulnerability on a cooldown.", "type" = /obj/item/immortality_talisman),
 				"modkit" = list("name" = "Rapid Repeater design disk", "description" = "An unusual kinetic-accelerator upgrade blueprint for your research console.", "type" = /obj/item/disk/design_disk/modkit_disc/rapid_repeater),
+				"lantern" = list("name" = "Wisp lantern", "description" = "A rare lantern with a friendly wisp that can orbit its owner.", "type" = /obj/item/wisp_lantern),
+				"babel" = list("name" = "Book of Babel", "description" = "Read this ancient tome to learn every language. Consumed when read.", "type" = /obj/item/book_of_babel),
+				"paradox" = list("name" = "Linked paradox bag pair", "description" = "Two rare bags sharing the same storage space.", "type" = /obj/item/shared_storage/red),
 			)
 		if(2)
-			reward_options = list(
+			return list(
 				"resurrection" = list("name" = "Resurrection crystal", "description" = "Activate it to gain a second chance after death. Cannot save you from complete bodily destruction.", "type" = /obj/item/resurrection_crystal),
 				"eye" = list("name" = "Eye of God", "description" = "A powerful vision and scanning artifact. Equipping it binds it to you.", "type" = /obj/item/clothing/glasses/godeye),
 				"club" = list("name" = "Hierophant club", "description" = "The Hierophant's rare weapon, with its normal attacks and beacon abilities.", "type" = /obj/item/hierophant_club),
+				"saw" = list("name" = "Cleaving saw", "description" = "The blood-drunk miner's transforming weapon, effective against fauna.", "type" = /obj/item/melee/cleaving_saw),
+				"rod" = list("name" = "Rod of Asclepius", "description" = "A powerful healing relic. Activation binds it to your hand and requires a nonviolence oath.", "type" = /obj/item/rod_of_asclepius),
+				"flight" = list("name" = "Flight potion", "description" = "A rare wing-granting elixir for compatible humanoid bodies.", "type" = /obj/item/reagent_containers/cup/bottle/potion/flight),
 			)
 		if(3)
-			reward_options = list(
+			return list(
 				"blade" = list("name" = "High-frequency blade", "description" = "An exceptional energy blade normally unavailable from ordinary station production.", "type" = /obj/item/highfrequencyblade),
 				"armour" = list("name" = "Godslayer armour", "description" = "Legendary protective armour with a powerful emergency healing effect.", "type" = /obj/item/clothing/suit/hooded/cloak/godslayer),
 				"omnitool" = list("name" = "Omnitool", "description" = "An admin-only multipurpose engineering tool, awarded here as expedition treasure.", "type" = /obj/item/debug/omnitool),
+				"voice" = list("name" = "Divine vocal cords", "description" = "The Colossus's Voice of God organ. Requires surgical installation.", "type" = /obj/item/organ/vocal_cords/colossus),
+				"berserker" = list("name" = "Berserker armour", "description" = "Rare rage-fuelled armour; can be empowered with drake remains. Not initially spaceworthy.", "type" = /obj/item/clothing/suit/hooded/berserker),
+				"storms" = list("name" = "Staff of storms", "description" = "Legion's lightning staff, with its normal storm and thunder abilities.", "type" = /obj/item/storm_staff),
 			)
+	return list()
 
 /datum/solo_expedition/Destroy()
 	// Unregister first: deleting targets during cleanup must not report failure or kills.

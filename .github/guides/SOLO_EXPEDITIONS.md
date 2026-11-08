@@ -23,11 +23,16 @@ for the round, including across console reconstruction.
 4. Return to a powered console and choose **one** of the three advertised rare
    rewards. Rewards appear beside the console and three fresh offers are generated.
 
-| Difficulty | Reward choices |
+Each tier has a separate pool of six artifacts. Every offer draws three distinct
+choices from its pool, without replacement. Those choices are locked when the
+offer is generated; reopening the console or rebuilding it does not reroll them.
+Choose one of the three on completion. Unoffered items cannot be claimed.
+
+| Difficulty | Reward pool (three drawn per offer) |
 | --- | --- |
-| 1 | Linked warp cube pair; Immortality Talisman; Rapid Repeater design disk |
-| 2 | Resurrection crystal; Eye of God; Hierophant club |
-| 3 | High-frequency blade; godslayer armour; admin-only omnitool |
+| 1 | Linked warp cubes; Immortality Talisman; Rapid Repeater design disk; wisp lantern; Book of Babel; linked paradox bags |
+| 2 | Resurrection crystal; Eye of God; Hierophant club; cleaving saw; Rod of Asclepius; flight potion |
+| 3 | High-frequency blade; godslayer armour; admin-only omnitool; divine vocal cords; berserker armour; staff of storms |
 
 Each artifact retains its normal abilities, restrictions, and drawbacks. The red
 warp cube automatically creates its linked blue partner. The resurrection crystal
