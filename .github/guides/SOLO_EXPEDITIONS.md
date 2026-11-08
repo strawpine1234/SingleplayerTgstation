@@ -170,6 +170,6 @@ test of GPS discovery, fauna, field work interruption, and return/reward flow.
 
 ## Science: Xenomorph Containment
 
-The **Science** tab offers a rewardless station containment mission. Acceptance opens a burrow in an eligible room and immediately releases one hostile AI xenomorph queen. Three reinforcement waves follow at 30-second intervals, each containing 2–4 randomly selected hunters, drones, or sentinels. Reinforcement waves never include queens. Blocked exits use the breach raid's bounded retry policy and may delay deployment.
+The **Science** tab offers a rewardless station containment mission. Acceptance opens a burrow in an eligible room and immediately releases one hostile AI xenomorph queen. Three reinforcement waves follow at 30-second intervals, each containing 2–4 randomly selected hunters, bruisers, or sentinels. Reinforcement waves never include queens. Blocked exits use the breach raid's bounded retry policy and may delay deployment.
 
 After the first reinforcement wave, interact with the burrow for 12 uninterrupted seconds to seal it, or destroy it to stop further waves. Destroying it before that wave fails the assignment. Eliminate the queen and every released xenomorph to complete containment. Mission xenomorphs cannot lay eggs or plant weeds, keeping the encounter finite. Use **Close Assignment** to record completion and refresh the board. This mission provides no rewards.

@@ -157,7 +157,7 @@ GLOBAL_DATUM_INIT(solo_expeditions, /datum/solo_expedition_board, new)
 			description = "Science monitoring has detected a xenomorph burrow beneath the station. Contain the queen and her reinforcements before they overrun the base. No requisition rewards are assigned to this operation."
 			orders = list(
 				"Accept to open a burrow in an eligible station room. A hostile queen emerges immediately; follow the assigned room and GPS signal.",
-				"Three reinforcement waves each contain 2-4 random hunters, drones, or sentinels. The first arrives after 30 seconds, with 30 seconds between subsequent waves. No additional queens emerge.",
+				"Three reinforcement waves each contain 2-4 random hunters, bruisers, or sentinels. The first arrives after 30 seconds, with 30 seconds between subsequent waves. No additional queens emerge.",
 				"After the first reinforcement wave, seal the burrow with a 12-second uninterrupted interaction, or destroy it to stop reinforcements. Eliminate the queen and every released xenomorph.",
 				"Destroying the burrow before the first reinforcement wave invalidates the assignment. No mission rewards are currently available.",
 			)
@@ -754,6 +754,9 @@ GLOBAL_DATUM_INIT(solo_expeditions, /datum/solo_expedition_board, new)
 	icon_dead = "hunter_dead"
 
 /mob/living/basic/alien/drone/expedition
+	name = "alien bruiser"
+	health = 150
+	maxHealth = 150
 	icon = 'icons/mob/expedition/xenomorphs.dmi'
 	icon_state = "drone"
 	icon_living = "drone"
