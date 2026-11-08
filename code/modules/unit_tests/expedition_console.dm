@@ -14,6 +14,7 @@
 			TEST_ASSERT(reward_id in pool, "Rewards must belong to the mission's tier.")
 	TEST_ASSERT_EQUAL(length(kinds), 3, "The board must offer three distinct objective types.")
 	TEST_ASSERT("siege" in kinds, "A siege offer must always be available.")
+	TEST_ASSERT("necropolis" in kinds, "A Necropolis breach must always be available.")
 	TEST_ASSERT(!board.accept_offer("invalid"), "An arbitrary client offer ID must not deploy a mission.")
 	var/datum/solo_expedition/selected = board.offers[1]
 	var/old_id = selected.id
@@ -177,3 +178,45 @@
 	TEST_ASSERT(!("syndicate_sword" in other_pool), "Other mission types must not receive raid-exclusive loot.")
 	qdel(other)
 	qdel(raid)
+
+/// Necropolis breaches use the original mythical pool, bounded 3/4/5 waves and intact floors.
+/datum/unit_test/expedition_necropolis
+
+/datum/unit_test/expedition_necropolis/Run()
+	var/datum/solo_expedition/mission = new("necropolis", "necro_test")
+	TEST_ASSERT_EQUAL(mission.difficulty, 4, "Necropolis breaches must be tier four.")
+	TEST_ASSERT(mission.is_station_defense(), "Necropolis breaches must share station-defense lifecycle rules.")
+	TEST_ASSERT_EQUAL(mission.get_station_wave_size(1), 3, "The first wave must contain three creatures.")
+	TEST_ASSERT_EQUAL(mission.get_station_wave_size(2), 4, "The second wave must contain four creatures.")
+	TEST_ASSERT_EQUAL(mission.get_station_wave_size(3), 5, "The third wave must contain five creatures.")
+	TEST_ASSERT_EQUAL(mission.get_station_wave_size(4), 0, "There must be no fourth wave.")
+	var/list/pool = mission.get_mission_reward_pool()
+	TEST_ASSERT_EQUAL(length(pool), 6, "The Necropolis pool must retain all six original mythical items.")
+	TEST_ASSERT("mythic_blade" in pool, "The original mythical blade must be available.")
+	TEST_ASSERT(!("syndicate_sword" in pool), "Necropolis missions must not offer Syndicate-only rewards.")
+	TEST_ASSERT_EQUAL(length(mission.reward_options), 3, "The mission must offer three locked mythical choices.")
+	for(var/reward_id in mission.reward_options)
+		TEST_ASSERT(reward_id in pool, "Necropolis reward choices must come from the original pool.")
+	var/turf/floor = run_loc_floor_bottom_left
+	var/original_type = floor.type
+	var/original_icon_state = floor.icon_state
+	mission.beacon = allocate(/obj/structure/expedition_beacon/siege/necropolis, floor, mission)
+	TEST_ASSERT_EQUAL(get_turf(mission.beacon), floor, "The tendril must stand on the original floor turf.")
+	TEST_ASSERT_EQUAL(floor.type, original_type, "Emergence must not change the floor type.")
+	TEST_ASSERT_EQUAL(floor.icon_state, original_icon_state, "Emergence must not change the floor appearance.")
+	qdel(mission.beacon)
+	TEST_ASSERT(!QDELETED(floor), "Destroying the tendril must not delete the floor.")
+	TEST_ASSERT_EQUAL(floor.type, original_type, "Destroying the tendril must not create a chasm.")
+	qdel(mission)
+	mission = new("necropolis", "necro_completion_test")
+	mission.state = "active"
+	mission.waves_sent = 1
+	mission.target_count = 3
+	mission.kills = 3
+	mission.check_siege_completion()
+	TEST_ASSERT_EQUAL(mission.state, "active", "The breach must not complete while reinforcements are enabled.")
+	mission.stop_siege_deployment()
+	TEST_ASSERT_EQUAL(mission.state, "complete", "Sealing the breach after verified kills must complete it.")
+	TEST_ASSERT_NULL(mission.beacon, "Completed breaches must not retain their objective.")
+	TEST_ASSERT(!mission.dispatch_siege_wave(), "Completed breaches must not spawn more creatures.")
+	qdel(mission)

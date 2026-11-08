@@ -50,8 +50,8 @@ export const ExpeditionConsole = () => {
             Travel using the mining shuttle or your usual mining transport.
             Bring a GPS and protection for the mining planet. Sites are deployed
             in Lavaland wilderness or the ice moon underground; boarding sieges
-            take place on the station. All consoles share one active expedition.
-            Rewards arrive beside the console.
+            and Necropolis breaches take place on the station. All consoles
+            share one active expedition. Rewards arrive beside the console.
           </Box>
           {cooldown > 0 && (
             <Box mt={1} color="average">
@@ -76,12 +76,12 @@ export const ExpeditionConsole = () => {
                   {active.kills} / {active.targets}
                 </LabeledList.Item>
               )}
-              {active.kind === 'siege' && (
+              {(active.kind === 'siege' || active.kind === 'necropolis') && (
                 <>
                   <LabeledList.Item label="Waves deployed">
                     {active.waves} / 3
                   </LabeledList.Item>
-                  <LabeledList.Item label="Pod deployment system">
+                  <LabeledList.Item label="Breach reinforcement source">
                     {active.deployment_disabled
                       ? 'Disabled / exhausted'
                       : 'Active'}
@@ -162,8 +162,8 @@ const MissionDetails = ({ mission }: { mission: Mission }) => (
     <Box color="good">Reward pool: {mission.reward_theme}</Box>
     <Box color="average">
       Difficulty: {mission.difficulty}/4
-      {mission.kind === 'siege'
-        ? ' · Mythical rewards · 45-second preparation · up to 3 waves'
+      {mission.kind === 'siege' || mission.kind === 'necropolis'
+        ? ` · Mythical rewards · 45-second preparation · waves: ${mission.kind === 'necropolis' ? '3 / 4 / 5 creatures' : '2 / 2 / 3 boarders'}`
         : ` · Field work: ${mission.work_seconds} seconds`}
     </Box>
     <Box color="label">
