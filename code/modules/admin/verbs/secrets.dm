@@ -93,6 +93,32 @@ ADMIN_VERB(secrets, R_NONE, "Secrets", "Abuse harder than you ever have before w
 			message_admins("[key_name_admin(holder)] has removed the cap on security officers.")
 
 		//Buttons for helpful stuff. This is where people land in the tgui
+		if("research_all")
+			// Recheck current privileges rather than trusting cached menu permissions.
+			if(!check_rights(R_ADMIN))
+				return
+			var/networks_updated = 0
+			var/nodes_unlocked = 0
+			for(var/datum/techweb/science/research as anything in SSresearch.techwebs)
+				if(!istype(research))
+					continue
+				// Reveal hidden research before updating node status, which otherwise drops it.
+				research.hidden_nodes.Cut()
+				for(var/node_path, node in SSresearch.techweb_nodes)
+					if(research.researched_nodes[node_path])
+						continue
+					if(research.research_node(node, force = TRUE, auto_adjust_cost = FALSE, get_that_dosh = FALSE, research_source = usr))
+						nodes_unlocked++
+				for(var/obj/machinery/computer/rdconsole/console as anything in research.consoles_accessing)
+					SStgui.update_uis(console)
+				networks_updated++
+			if(!networks_updated)
+				to_chat(holder, span_warning("No station science research networks are available yet."))
+				return
+			log_admin("[key_name(holder)] unlocked all station research ([nodes_unlocked] nodes across [networks_updated] science networks).")
+			message_admins("[key_name_admin(holder)] unlocked all station research ([nodes_unlocked] nodes across [networks_updated] science networks).")
+			to_chat(holder, span_notice("All station research is now unlocked. R&D consoles and linked fabricators can access the researched designs."))
+
 		if("clear_virus")
 			var/choice = tgui_alert(usr, "Are you sure you want to cure all disease? This will also grant immunity for that disease",, list("Yes", "Cancel"))
 			if(choice == "Yes")
