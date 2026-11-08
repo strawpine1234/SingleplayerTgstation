@@ -382,6 +382,23 @@ GLOBAL_DATUM_INIT(solo_expeditions, /datum/solo_expedition_board, new)
 /datum/solo_expedition/proc/check_siege_completion()
 	if(kind == "siege" && state == "active" && deployment_disabled && waves_sent > 0 && target_count > 0 && !length(living_guards) && kills == target_count)
 		state = "complete"
+		if(wave_timer)
+			deltimer(wave_timer)
+			wave_timer = null
+		priority_announce("All boarders from the siege in [destination_room] have been eliminated. The siege is complete. Your mythical reward is ready to claim at an expedition mission console.", "Boarding Pod Siege Complete")
+		if(GLOB.solo_expeditions.active == src)
+			GLOB.solo_expeditions.status = "Siege complete in [destination_room]. All boarders are dead. Open the expedition console to claim your mythical reward."
+		var/obj/structure/expedition_beacon/pod = beacon
+		beacon = null
+		if(!QDELETED(pod))
+			var/turf/site = get_turf(pod)
+			pod.visible_message(span_notice("[pod] dissolves into a puff of shimmering bluespace dust!"))
+			new /obj/effect/temp_visual/small_smoke/expedition_bluespace_dust(site)
+			new /obj/effect/temp_visual/bluespace_fissure(site)
+			playsound(site, 'sound/effects/phasein.ogg', 45, TRUE)
+			// Detach first so deleting the completed objective cannot alter mission state.
+			pod.mission = null
+			qdel(pod)
 
 /// Serialize only player-facing data; no client-provided reward values or completion states.
 /datum/solo_expedition/proc/get_mission_data()
@@ -526,8 +543,8 @@ GLOBAL_DATUM_INIT(solo_expeditions, /datum/solo_expedition_board, new)
 		return
 	working = FALSE
 	if(success && mission && mission.state == "active")
-		mission.stop_siege_deployment()
 		visible_message(span_notice("[user] disables [src]'s deployment system!"))
+		mission.stop_siege_deployment()
 
 /obj/structure/expedition_beacon/siege/Destroy()
 	if(mission)
@@ -538,6 +555,17 @@ GLOBAL_DATUM_INIT(solo_expeditions, /datum/solo_expedition_board, new)
 			owner.state = "failed"
 		owner.stop_siege_deployment()
 	return ..()
+
+/// Harmless visual dust: no smoke chemistry, damage, or teleportation of nearby entities.
+/obj/effect/temp_visual/small_smoke/expedition_bluespace_dust
+	name = "bluespace dust"
+	color = COLOR_BLUE_LIGHT
+	duration = 2 SECONDS
+
+/obj/effect/temp_visual/small_smoke/expedition_bluespace_dust/Initialize(mapload)
+	. = ..()
+	transform = matrix() * 2
+	animate(src, alpha = 0, time = duration)
 
 /// Real human boarders use the same organs, wounds, blood, critical states and corpses as crew.
 /mob/living/carbon/human/expedition_boarder

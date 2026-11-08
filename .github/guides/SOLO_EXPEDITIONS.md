@@ -72,6 +72,9 @@ to disable reinforcements, or destroy its 300-integrity hull. Killing the pod
 before the first wave fails the mission. Once deployment has stopped (including
 automatically after wave three), defeat every spawned boarder to complete the
 mission. Deleted live enemies fail the mission rather than counting as kills.
+On completion, a station-wide announcement confirms all boarders are dead and
+the mythical reward is ready. The remaining pod dissolves into harmless blue
+dust and a bluespace shimmer; the completed offer stays claimable at the console.
 Six failed exit checks, five seconds apart, fail a blocked deployment. Abandonment
 and reward collection clean up the mission-owned pod, enemies, and timers.
 
