@@ -5,8 +5,8 @@ imprinter. It is available from the starter **Material Processing** node. Build
 it using the normal computer frame construction process. For admin testing,
 spawn `/obj/machinery/computer/expedition`.
 
-Every board has three offers in random order: one boarding-pod siege and two
-different wilderness missions drawn from survey, salvage, and hunt.
+Every board has three offers in random order: one Syndicate Breach Raid, one
+Necropolis Breach, and one wilderness mission drawn from survey, salvage, and hunt.
 Titles, difficulty, field-work duration, encounter composition,
 and reward tiers vary. All consoles share one active expedition and progress
 for the round, including across console reconstruction.
@@ -49,8 +49,8 @@ these six new items, with one claim on completion:
 | Skeleton Protocol | Unlimited ranged emag supporting normal doors and machines. Hacking is destructive and still uses each target's normal emag handling. |
 | Phantom Relay | Chameleon projector with immediate reuse after disruption. Contact and attacks still break the disguise. |
 
-The original six general mythical items remain unchanged in the fallback T4 pool
-for other mission types. Lower-tier pools are unchanged. Raid reward cards show
+The original six general mythical items are the Necropolis Breach reward pool
+and remain the fallback for other T4 mission types. Lower-tier pools are unchanged. Raid reward cards show
 the Syndicate pool label, and the three choices are locked when the offer is
 generated. Claim requests cannot select unoffered items or a different pool.
 
@@ -104,6 +104,30 @@ Mythical rewards retain existing item abilities and add these stronger stats:
 - **Tempest Sovereign:** twelve lightning charges, five-second charging.
 - **Sovereign's Sceptre:** 60 melee force with Hierophant blast/teleport abilities.
 - **Beastbane:** 35 closed/50 open saw force, plus 60 against mining fauna/bosses.
+
+## Necropolis Breach
+
+The second Tier 4 station-defense mission uses the **original** six mythical
+relics listed above. As usual, three distinct choices are shown before acceptance
+and only one can be claimed. Syndicate-only items are excluded from this mission.
+
+A mission-controlled necropolis tendril rises through an unoccupied station floor
+in a smoke puff. Its emergence animation, destruction, and completion cleanup
+never replace the turf, remove floor tiles, or create a chasm. It uses the real
+tendril sprite without the normal tendril's uncontrolled spawner/terrain behaviour.
+
+The station announcement names the room and GPS signal. After 45 seconds, waves
+of **3, 4, and 5** randomly selected watchers, goliaths, and basilisks emerge at
+40-second intervals: at most twelve assigned creatures. Fauna which create extra
+broods are not used. The site requires at least five clear adjacent floor exits;
+blocked deployments use the same bounded retry/failure rules as the pod siege.
+
+After the first wave, interact with the tendril for twelve uninterrupted seconds
+to seal the breach, or destroy it to prevent further waves. Destroying it before
+the first wave fails the mission. Once reinforcements stop, kill every deployed
+creature to finish. The station announces that the reward is ready, and any
+remaining tendril dissolves into harmless bluespace dust. Room information and
+the completed reward offer remain available at the console.
 
 Abandoning an expedition removes its beacon, recorder, and assigned fauna and
 imposes a one-minute departure cooldown. Loss of an uncompleted objective or a

@@ -25,14 +25,13 @@ GLOBAL_DATUM_INIT(solo_expeditions, /datum/solo_expedition_board, new)
 	QDEL_LIST(offers)
 	return ..()
 
-/// Always offer the siege alongside two different wilderness missions.
+/// Offer both tier-four station breaches alongside one randomized wilderness expedition.
 /datum/solo_expedition_board/proc/roll_offers()
 	if(active)
 		return FALSE
 	QDEL_LIST(offers)
 	offers = list()
-	var/list/wilderness = shuffle(list("survey", "salvage", "hunt"))
-	var/list/kinds = shuffle(list("siege", wilderness[1], wilderness[2]))
+	var/list/kinds = shuffle(list("siege", "necropolis", pick("survey", "salvage", "hunt")))
 	for(var/kind in kinds)
 		serial++
 		var/datum/solo_expedition/mission = new(kind, "[serial]")
@@ -130,12 +129,15 @@ GLOBAL_DATUM_INIT(solo_expeditions, /datum/solo_expedition_board, new)
 	. = ..()
 	kind = mission_kind
 	id = mission_id
-	difficulty = kind == "siege" ? 4 : rand(1, 3)
+	difficulty = is_station_defense() ? 4 : rand(1, 3)
 	configure_rewards()
 	work_time = (10 + difficulty * 5) SECONDS
 	gps_tag = "EXP-[id]"
 	var/site_name = pick("Cinder", "Echo", "Horizon", "Pioneer", "Wayfarer", "Prospector")
 	switch(kind)
+		if("necropolis")
+			title = "Necropolis breach: [site_name]"
+			description = "A necropolis tendril erupts through a clear station floor without damaging the tile. Prepare for 45 seconds, then fight three waves of 3, 4, and 5 Lavaland creatures, 40 seconds apart. After the first wave, seal it with a 12-second interaction or destroy it to stop reinforcements. Kill every deployed creature to claim an original mythical relic. Destroying it before the first wave fails the mission."
 		if("siege")
 			title = "Syndicate breach raid: [site_name]"
 			description = "A hostile pod will dock at a clear station location. You have 45 seconds to prepare, followed by at most three waves (2, 2, and 3 boarders), 40 seconds apart. Disable its deployment controls with a 12-second interaction after the first wave, or destroy it, to stop reinforcements. Eliminate every deployed boarder to claim a mythical reward. Destroying the pod before any boarders deploy fails the mission."
@@ -148,6 +150,24 @@ GLOBAL_DATUM_INIT(solo_expeditions, /datum/solo_expedition_board, new)
 		if("hunt")
 			title = "[site_name] fauna suppression"
 			description = "Kill the marked expedition fauna, then interact with the beacon to verify the site. Return to a console afterward. Only these assigned targets count."
+
+/// The station-defense missions share finite-wave, sabotage, death-tracking and cleanup rules.
+/datum/solo_expedition/proc/is_station_defense()
+	return kind == "siege" || kind == "necropolis"
+
+/// Wave numbers are one-based; no fourth wave can be dispatched.
+/datum/solo_expedition/proc/get_station_wave_size(wave_number)
+	if(wave_number < 1 || wave_number > 3)
+		return 0
+	if(kind == "necropolis")
+		return wave_number + 2
+	return wave_number == 3 ? 3 : 2
+
+/// Only finite-spawn fauna are used: none can generate untracked broods or extra waves.
+/datum/solo_expedition/proc/get_station_wave_mob(index, wave_size)
+	if(kind == "necropolis")
+		return pick(/mob/living/basic/mining/watcher, /mob/living/basic/mining/goliath, /mob/living/basic/mining/basilisk)
+	return index == wave_size ? /mob/living/carbon/human/expedition_boarder/gunner : /mob/living/carbon/human/expedition_boarder
 
 /// Draw three different rewards once; reopening the UI cannot reroll an offer.
 /datum/solo_expedition/proc/configure_rewards()
@@ -278,12 +298,18 @@ GLOBAL_DATUM_INIT(solo_expeditions, /datum/solo_expedition_board, new)
 /datum/solo_expedition/proc/deploy()
 	if(state != "offered")
 		return FALSE
-	var/turf/site = kind == "siege" ? find_siege_site() : find_site()
+	var/turf/site = is_station_defense() ? find_siege_site() : find_site()
 	if(!site)
 		return FALSE
 	var/area/destination = get_area(site)
 	destination_room = destination.name
 	state = "active"
+	if(kind == "necropolis")
+		beacon = new /obj/structure/expedition_beacon/siege/necropolis(site, src)
+		beacon.visible_message(span_danger("A necropolis tendril bursts through the floor! Lavaland creatures will emerge in 45 seconds!"))
+		wave_timer = addtimer(CALLBACK(src, PROC_REF(dispatch_siege_wave)), 45 SECONDS, TIMER_STOPPABLE)
+		priority_announce("A necropolis tendril has erupted in [destination_room]. Lavaland creatures will emerge in 45 seconds. Prepare to contain the breach. GPS signal: [gps_tag].", "Necropolis Breach Alert")
+		return TRUE
 	if(kind == "siege")
 		beacon = new /obj/structure/expedition_beacon/siege(site, src)
 		beacon.visible_message(span_danger("A hostile boarding pod docks! Its deployment bay will open in 45 seconds!"))
@@ -323,7 +349,7 @@ GLOBAL_DATUM_INIT(solo_expeditions, /datum/solo_expedition_board, new)
 	SIGNAL_HANDLER
 	living_guards -= source
 	guards -= source
-	if((kind == "hunt" || kind == "siege") && state == "active")
+	if((kind == "hunt" || is_station_defense()) && state == "active")
 		state = "failed"
 		stop_siege_deployment()
 
@@ -345,20 +371,20 @@ GLOBAL_DATUM_INIT(solo_expeditions, /datum/solo_expedition_board, new)
 		for(var/turf/open/floor/exit in orange(1, site))
 			if(is_station_level(exit.z) && !exit.is_blocked_turf())
 				free_exits++
-		if(free_exits >= 3)
+		if(free_exits >= (kind == "necropolis" ? 5 : 3))
 			return site
 	return null
 
 /// Dispatch at most seven boarders in three waves. Blocked exits get bounded retries.
 /datum/solo_expedition/proc/dispatch_siege_wave()
 	wave_timer = null
-	if(kind != "siege" || state != "active" || deployment_disabled || waves_sent >= 3 || QDELETED(beacon))
+	if(!is_station_defense() || state != "active" || deployment_disabled || waves_sent >= 3 || QDELETED(beacon))
 		return FALSE
 	var/list/exits = list()
 	for(var/turf/open/floor/exit in orange(1, beacon))
 		if(is_station_level(exit.z) && !exit.is_blocked_turf())
 			exits += exit
-	var/wave_size = waves_sent == 2 ? 3 : 2
+	var/wave_size = get_station_wave_size(waves_sent + 1)
 	if(length(exits) < wave_size)
 		blocked_retries++
 		if(blocked_retries >= 6)
@@ -370,7 +396,7 @@ GLOBAL_DATUM_INIT(solo_expeditions, /datum/solo_expedition_board, new)
 	blocked_retries = 0
 	waves_sent++
 	for(var/index in 1 to wave_size)
-		var/mob_type = index == wave_size ? /mob/living/carbon/human/expedition_boarder/gunner : /mob/living/carbon/human/expedition_boarder
+		var/mob_type = get_station_wave_mob(index, wave_size)
 		var/mob/living/boarder = new mob_type(pick_n_take(exits))
 		boarder.name = "[boarder.name] ([gps_tag])"
 		guards += boarder
@@ -378,7 +404,7 @@ GLOBAL_DATUM_INIT(solo_expeditions, /datum/solo_expedition_board, new)
 		target_count++
 		RegisterSignal(boarder, COMSIG_LIVING_DEATH, PROC_REF(target_died))
 		RegisterSignal(boarder, COMSIG_QDELETING, PROC_REF(target_deleted))
-	beacon.visible_message(span_danger("[beacon] deploys boarding wave [waves_sent] of 3!"))
+	beacon.visible_message(span_danger("[beacon] releases [kind == "necropolis" ? "creature" : "boarding"] wave [waves_sent] of 3!"))
 	beacon.update_appearance()
 	if(waves_sent >= 3)
 		stop_siege_deployment()
@@ -397,14 +423,16 @@ GLOBAL_DATUM_INIT(solo_expeditions, /datum/solo_expedition_board, new)
 
 /// Completion cannot occur until at least one wave has deployed and all targets are dead.
 /datum/solo_expedition/proc/check_siege_completion()
-	if(kind == "siege" && state == "active" && deployment_disabled && waves_sent > 0 && target_count > 0 && !length(living_guards) && kills == target_count)
+	if(is_station_defense() && state == "active" && deployment_disabled && waves_sent > 0 && target_count > 0 && !length(living_guards) && kills == target_count)
 		state = "complete"
 		if(wave_timer)
 			deltimer(wave_timer)
 			wave_timer = null
-		priority_announce("All boarders from the siege in [destination_room] have been eliminated. The siege is complete. Your mythical reward is ready to claim at an expedition mission console.", "Boarding Pod Siege Complete")
+		var/encounter = kind == "necropolis" ? "Necropolis breach" : "Boarding pod siege"
+		var/hostiles = kind == "necropolis" ? "Lavaland creatures" : "boarders"
+		priority_announce("All [hostiles] in [destination_room] have been eliminated. The [encounter] is complete. Your mythical reward is ready to claim at an expedition mission console.", "[encounter] Complete")
 		if(GLOB.solo_expeditions.active == src)
-			GLOB.solo_expeditions.status = "Siege complete in [destination_room]. All boarders are dead. Open the expedition console to claim your mythical reward."
+			GLOB.solo_expeditions.status = "[encounter] complete in [destination_room]. All [hostiles] are dead. Open the expedition console to claim your mythical reward."
 		var/obj/structure/expedition_beacon/pod = beacon
 		beacon = null
 		if(!QDELETED(pod))
@@ -420,6 +448,11 @@ GLOBAL_DATUM_INIT(solo_expeditions, /datum/solo_expedition_board, new)
 /// Serialize only player-facing data; no client-provided reward values or completion states.
 /datum/solo_expedition/proc/get_mission_data()
 	var/turf/site = get_turf(beacon)
+	var/reward_theme = "General tier [difficulty] relics"
+	if(kind == "siege")
+		reward_theme = "Syndicate mythical arsenal"
+	else if(kind == "necropolis")
+		reward_theme = "Original Necropolis mythical relics"
 	var/list/rewards = list()
 	for(var/reward_id in reward_options)
 		var/list/choice = reward_options[reward_id]
@@ -430,7 +463,7 @@ GLOBAL_DATUM_INIT(solo_expeditions, /datum/solo_expedition_board, new)
 		"title" = title,
 		"description" = description,
 		"difficulty" = difficulty,
-		"reward_theme" = kind == "siege" && difficulty == 4 ? "Syndicate mythical arsenal" : "General tier [difficulty] relics",
+		"reward_theme" = reward_theme,
 		"rewards" = rewards,
 		"work_seconds" = work_time / (1 SECONDS),
 		"state" = state,
@@ -549,13 +582,13 @@ GLOBAL_DATUM_INIT(solo_expeditions, /datum/solo_expedition_board, new)
 	if(!mission || mission.state != "active" || working || !ishuman(user) || !user.can_perform_action(src))
 		return
 	if(!mission.waves_sent)
-		balloon_alert(user, "controls sealed until first deployment!")
+		balloon_alert(user, mission.kind == "necropolis" ? "tendril still emerging!" : "controls sealed until first deployment!")
 		return
 	if(mission.deployment_disabled)
-		balloon_alert(user, "defeat remaining boarders!")
+		balloon_alert(user, "defeat remaining hostiles!")
 		return
 	working = TRUE
-	balloon_alert(user, "disabling deployment...")
+	balloon_alert(user, mission.kind == "necropolis" ? "sealing the breach..." : "disabling deployment...")
 	var/success = do_after(user, 12 SECONDS, target = src)
 	if(QDELETED(src))
 		return
@@ -573,6 +606,29 @@ GLOBAL_DATUM_INIT(solo_expeditions, /datum/solo_expedition_board, new)
 			owner.state = "failed"
 		owner.stop_siege_deployment()
 	return ..()
+
+/// Mission-controlled tendril visual: no spawner component, terrain replacement, or chasm on death.
+/obj/structure/expedition_beacon/siege/necropolis
+	name = "station necropolis tendril"
+	desc = "A necropolis tendril erupting through an intact floor. After its first wave, interact for twelve seconds to seal it, or destroy it."
+	icon = 'icons/mob/simple/lavaland/tendril.dmi'
+	icon_state = "tendril"
+	pixel_x = 0
+	pixel_w = -8
+	max_integrity = 300
+
+/obj/structure/expedition_beacon/siege/necropolis/Initialize(mapload, datum/solo_expedition/owner)
+	. = ..()
+	if(mission)
+		name = "necropolis tendril ([mission.gps_tag])"
+	new /obj/effect/temp_visual/small_smoke(get_turf(src))
+	alpha = 0
+	pixel_y = -24
+	animate(src, alpha = 255, pixel_y = 0, time = 1 SECONDS)
+
+/obj/structure/expedition_beacon/siege/necropolis/update_overlays()
+	// Deliberately omit the parent supply-pod door, insignia, and glow overlays.
+	return list()
 
 /// Harmless visual dust: no smoke chemistry, damage, or teleportation of nearby entities.
 /obj/effect/temp_visual/small_smoke/expedition_bluespace_dust
