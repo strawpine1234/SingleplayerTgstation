@@ -776,18 +776,34 @@ GLOBAL_DATUM_INIT(solo_expeditions, /datum/solo_expedition_board, new)
 /// Mythical artifacts use existing abilities with explicitly stronger statistics.
 /obj/item/highfrequencyblade/expedition_mythic
 	name = "Worldsplitter"
+	icon = 'icons/obj/mining_zones/mythical_items.dmi'
+	lefthand_file = 'icons/mob/inhands/mythical_lefthand.dmi'
+	righthand_file = 'icons/mob/inhands/mythical_righthand.dmi'
+	slash_color = "#fff2c6"
 	desc = "A pale seam of light runs along this resonant blade, singing softly whenever it passes near metal. The edge seems less interested in cutting matter than in persuading it to separate. Wield it in both hands to command its sweeping cuts."
 	force = 40
 	block_chance = 60
 
 /obj/item/clothing/suit/hooded/cloak/godslayer/expedition_mythic
 	name = "Aegis of the Undying"
+	icon = 'icons/obj/mining_zones/mythical_items.dmi'
+	worn_icon = 'icons/mob/clothing/mythical_items.dmi'
+	hoodtype = /obj/item/clothing/head/hooded/cloakhood/godslayer/expedition_mythic
 	desc = "Beneath these frost-dark plates, something ancient keeps a patient watch over the wearer. When its bearer falters, the armour releases a surge of restorative warmth. The presence must gather its strength before it can intervene again."
 	heal_amount = 1000
 	effect_cooldown_time = 1 MINUTES
 
+/obj/item/clothing/head/hooded/cloakhood/godslayer/expedition_mythic
+	name = "Aegis antlered helm"
+	desc = "Ancient ivory horns rise above a skull bound in frost-dark plates. A patient amber light watches from its hollow eyes."
+	icon = 'icons/obj/mining_zones/mythical_items.dmi'
+	worn_icon = 'icons/mob/clothing/mythical_items.dmi'
+	icon_state = "godslayer_hood"
+	worn_icon_state = "godslayer_hood"
+
 /obj/item/organ/vocal_cords/colossus/expedition_mythic
 	name = "Vox of the Necropolis"
+	icon = 'icons/obj/mining_zones/mythical_items.dmi'
 	desc = "Obsidian filaments cradle a throat that still murmurs beneath its crust of ash. Once grafted into a living bearer, its ancient decrees resonate through nearby organic minds, beast and mortal alike. The speaker alone is spared. Requires surgical installation; use Voice of God to issue commands such as HALT, SUFFER, or HEAL. Its resonance reaches visible creatures within eight tiles, even those that cannot hear."
 	base_multiplier = 3
 
@@ -797,6 +813,9 @@ GLOBAL_DATUM_INIT(solo_expeditions, /datum/solo_expedition_board, new)
 
 /obj/item/storm_staff/expedition_mythic
 	name = "Tempest Sovereign"
+	icon = 'icons/obj/mining_zones/mythical_items.dmi'
+	lefthand_file = 'icons/mob/inhands/mythical_lefthand.dmi'
+	righthand_file = 'icons/mob/inhands/mythical_righthand.dmi'
 	desc = "The air around this staff tastes of rain and hot copper. Captive lightning moves beneath its surface, eager for release. Direct its thunder at a distant target, or raise it to disperse a passing storm; its spent charge gradually returns."
 	max_thunder_charges = 12
 	thunder_charges = 12
@@ -804,11 +823,17 @@ GLOBAL_DATUM_INIT(solo_expeditions, /datum/solo_expedition_board, new)
 
 /obj/item/hierophant_club/expedition_mythic
 	name = "Sovereign's Sceptre"
+	icon = 'icons/obj/mining_zones/mythical_items.dmi'
+	lefthand_file = 'icons/mob/inhands/mythical_64x64_lefthand.dmi'
+	righthand_file = 'icons/mob/inhands/mythical_64x64_righthand.dmi'
 	desc = "Violet geometry shifts beneath the polished face of this heavy sceptre. Each strike carries the final authority of a long-dead ruler. Its surviving mechanisms can loose resonant blasts and fold the bearer back toward a placed beacon."
 	force = 60
 
 /obj/item/melee/cleaving_saw/expedition_mythic
 	name = "Beastbane"
+	icon = 'icons/obj/mining_zones/mythical_items.dmi'
+	lefthand_file = 'icons/mob/inhands/mythical_64x64_lefthand.dmi'
+	righthand_file = 'icons/mob/inhands/mythical_64x64_righthand.dmi'
 	desc = "Old hunting marks have been cut into the spine of this folding saw. Its teeth catch eagerly against the plated hides of the wastes. Unfold the blade into a long cleaver to sweep through the creatures gathered around you."
 	force = 35
 	open_force = 50
@@ -817,6 +842,9 @@ GLOBAL_DATUM_INIT(solo_expeditions, /datum/solo_expedition_board, new)
 /// Syndicate breach-raid mythical gear uses normal weapon, shield, armour and hacking APIs.
 /obj/item/melee/energy/sword/saber/red/expedition_syndicate
 	name = "Red Verdict"
+	icon = 'icons/obj/mining_zones/mythical_items.dmi'
+	lefthand_file = 'icons/mob/inhands/mythical_lefthand.dmi'
+	righthand_file = 'icons/mob/inhands/mythical_righthand.dmi'
 	desc = "An unmarked hilt fitted with a crimson focusing crystal. Once ignited, its narrow blade casts the room in the colour of a sealed execution order. Activate it before entering combat."
 	active_force = 60
 	block_chance = 70
@@ -824,6 +852,9 @@ GLOBAL_DATUM_INIT(solo_expeditions, /datum/solo_expedition_board, new)
 
 /obj/item/shield/energy/expedition_syndicate
 	name = "Crimson Bulwark"
+	icon = 'icons/obj/mining_zones/mythical_items.dmi'
+	lefthand_file = 'icons/mob/inhands/mythical_lefthand.dmi'
+	righthand_file = 'icons/mob/inhands/mythical_righthand.dmi'
 	desc = "Overlapping layers of red hardlight unfold from a compact forearm unit. The field is designed to turn aside incoming blows and return compatible energy fire to its sender. Activate it before use; overwhelming attacks can still break through its defence."
 	block_chance = 90
 	reflection_probability = 90
@@ -832,8 +863,11 @@ GLOBAL_DATUM_INIT(solo_expeditions, /datum/solo_expedition_board, new)
 
 /obj/item/gun/energy/laser/expedition_syndicate
 	name = "Blackstar Carbine"
+	icon = 'icons/obj/mining_zones/mythical_items.dmi'
+	lefthand_file = 'icons/mob/inhands/mythical_lefthand.dmi'
+	righthand_file = 'icons/mob/inhands/mythical_righthand.dmi'
 	desc = "A restricted-issue carbine with its serial number burned out of the receiver. A quiet internal generator continually replenishes the weapon's cell, while a dark focusing lens shapes each shot into a clean scarlet pulse."
-	color = COLOR_SOFT_RED
+	color = null
 	projectile_damage_multiplier = 2
 	selfcharge = TRUE
 	charge_delay = 1
@@ -853,8 +887,10 @@ GLOBAL_DATUM_INIT(solo_expeditions, /datum/solo_expedition_board, new)
 
 /obj/item/clothing/suit/armor/vest/expedition_syndicate
 	name = "Ghost Legion assault suit"
+	icon = 'icons/obj/mining_zones/mythical_items.dmi'
+	worn_icon = 'icons/mob/clothing/mythical_items.dmi'
 	desc = "Flexible black plates ride over a fitted assault harness, shielding the torso and limbs without burdening the wearer. A matching helmet accompanies the suit. The set is intended for close boarding actions and is not sealed against vacuum."
-	color = COLOR_SOFT_RED
+	color = null
 	armor_type = /datum/armor/expedition_syndicate_mythical
 	body_parts_covered = CHEST|GROIN|ARMS|HANDS|LEGS|FEET
 	slowdown = 0
@@ -866,14 +902,19 @@ GLOBAL_DATUM_INIT(solo_expeditions, /datum/solo_expedition_board, new)
 
 /obj/item/clothing/head/helmet/expedition_syndicate
 	name = "Ghost Legion helmet"
+	icon = 'icons/obj/mining_zones/mythical_items.dmi'
+	worn_icon = 'icons/mob/clothing/mythical_items.dmi'
 	desc = "A severe, featureless helmet issued with the Ghost Legion assault harness. Layered composites shield the head while leaving the wearer free to move. It is not vacuum-rated."
-	color = COLOR_SOFT_RED
+	color = null
 	armor_type = /datum/armor/expedition_syndicate_mythical
 	slowdown = 0
 	resistance_flags = FIRE_PROOF | ACID_PROOF
 
 /obj/item/card/emag/bluespace/expedition_syndicate
 	name = "Skeleton Protocol"
+	icon = 'icons/obj/mining_zones/mythical_items.dmi'
+	lefthand_file = 'icons/mob/inhands/mythical_lefthand.dmi'
+	righthand_file = 'icons/mob/inhands/mythical_righthand.dmi'
 	desc = "A confiscated intrusion device carrying a library of forbidden machine instructions. Its transmitter can corrupt compatible safeguards from a distance without expending disposable charges. These are destructive overrides: compromised doors and machinery may not return to normal operation."
 
 /obj/item/card/emag/bluespace/expedition_syndicate/Initialize(mapload)
@@ -882,8 +923,11 @@ GLOBAL_DATUM_INIT(solo_expeditions, /datum/solo_expedition_board, new)
 
 /obj/item/chameleon/expedition_syndicate
 	name = "Phantom Relay"
+	icon = 'icons/obj/mining_zones/mythical_items.dmi'
+	lefthand_file = 'icons/mob/inhands/mythical_lefthand.dmi'
+	righthand_file = 'icons/mob/inhands/mythical_righthand.dmi'
 	desc = "A stolen counterintelligence projector that wraps its operator in the likeness of a scanned object. Its image can be re-established as soon as a disruption clears, but impacts and physical contact still expose the person hiding inside. Scan an object, then use the projector in hand to assume its appearance."
-	color = COLOR_SOFT_RED
+	color = null
 
 /obj/item/chameleon/expedition_syndicate/disrupt(delete_dummy = TRUE)
 	. = ..()

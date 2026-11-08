@@ -118,6 +118,36 @@
 	TEST_ASSERT(/obj/item/hierophant_club/expedition_mythic::force > /obj/item/hierophant_club::force, "Mythical club must hit harder.")
 	TEST_ASSERT(/obj/item/melee/cleaving_saw/expedition_mythic::open_force > /obj/item/melee/cleaving_saw::open_force, "Mythical saw must hit harder when opened.")
 
+/// Mythical icons must cover every reward and survive the normal transformation lifecycle.
+/datum/unit_test/expedition_mythical_art
+
+/datum/unit_test/expedition_mythical_art/Run()
+	var/datum/solo_expedition/mission = new("necropolis", "art_test")
+	var/list/pool = mission.get_reward_pool(4) + mission.get_syndicate_reward_pool()
+	var/mob/living/carbon/human/user = allocate(/mob/living/carbon/human/consistent)
+	for(var/reward_id in pool)
+		var/list/reward = pool[reward_id]
+		var/obj/item/item = allocate(reward["type"])
+		TEST_ASSERT_EQUAL(item.icon, 'icons/obj/mining_zones/mythical_items.dmi', "Every mythical reward must use the dedicated artwork.")
+		TEST_ASSERT(icon_exists(item.icon, item.icon_state), "[item] must have an initial inventory sprite.")
+		if(item.worn_icon)
+			TEST_ASSERT(icon_exists(item.worn_icon, item.worn_icon_state || item.icon_state), "[item] must retain its worn sprite.")
+		var/datum/component/transforming/transformer = item.GetComponent(/datum/component/transforming)
+		if(transformer)
+			transformer.do_transform(item, user)
+			TEST_ASSERT(icon_exists(item.icon, item.icon_state), "[item] must have an activated/unfolded sprite.")
+			TEST_ASSERT(icon_exists(item.lefthand_file, item.inhand_icon_state), "[item] must have an activated left-hand sprite.")
+			TEST_ASSERT(icon_exists(item.righthand_file, item.inhand_icon_state), "[item] must have an activated right-hand sprite.")
+			transformer.do_transform(item, user)
+			TEST_ASSERT(icon_exists(item.icon, item.icon_state), "[item] must have a sprite after deactivation.")
+	var/obj/item/clothing/head/hooded/cloakhood/godslayer/expedition_mythic/hood = allocate(/obj/item/clothing/head/hooded/cloakhood/godslayer/expedition_mythic)
+	TEST_ASSERT(icon_exists(hood.icon, hood.icon_state), "Aegis must have matching hood artwork.")
+	TEST_ASSERT(icon_exists(hood.worn_icon, hood.worn_icon_state), "The matching Aegis hood must display when worn.")
+	var/obj/item/clothing/head/helmet/expedition_syndicate/helmet = allocate(/obj/item/clothing/head/helmet/expedition_syndicate)
+	TEST_ASSERT(icon_exists(helmet.icon, helmet.icon_state), "Ghost Legion must have a matching helmet sprite.")
+	TEST_ASSERT(icon_exists(helmet.worn_icon, helmet.worn_icon_state || helmet.icon_state), "Ghost Legion's helmet must display when worn.")
+	qdel(mission)
+
 /// Organic resonance must reach humans, pets and stun-immune fauna without reaching its bearer or machines.
 /datum/unit_test/expedition_necropolis_voice
 
