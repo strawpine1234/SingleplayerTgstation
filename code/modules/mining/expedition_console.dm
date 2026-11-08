@@ -1,7 +1,7 @@
 /// One round-wide board: rebuilding a console cannot reset a mission or duplicate rewards.
 GLOBAL_DATUM_INIT(solo_expeditions, /datum/solo_expedition_board, new)
 
-/// Five category offers and one active expedition, shared by all expedition consoles.
+/// Six category offers and one active expedition, shared by all expedition consoles.
 /datum/solo_expedition_board
 	/// Current randomized offers.
 	var/list/offers = list()
@@ -11,7 +11,7 @@ GLOBAL_DATUM_INIT(solo_expeditions, /datum/solo_expedition_board, new)
 	var/serial = 0
 	/// Earliest time another expedition can be accepted after abandonment.
 	var/next_start = 0
-	/// Number of rewards successfully claimed this round.
+	/// Number of assignments successfully closed this round.
 	var/completed = 0
 	/// Most recent board feedback.
 	var/status = "Central Command tasking uplink established. Review the briefs and prepare before accepting an assignment."
@@ -35,7 +35,7 @@ GLOBAL_DATUM_INIT(solo_expeditions, /datum/solo_expedition_board, new)
 		serial++
 		var/datum/solo_expedition/mission = new(pick("survey", "salvage", "hunt"), "[serial]", tier)
 		offers += mission
-	for(var/kind in list("siege", "necropolis"))
+	for(var/kind in list("siege", "necropolis", "xenomorph"))
 		serial++
 		var/datum/solo_expedition/mission = new(kind, "[serial]")
 		offers += mission
@@ -53,7 +53,7 @@ GLOBAL_DATUM_INIT(solo_expeditions, /datum/solo_expedition_board, new)
 			active = null
 			status = "No clear site found for this mission. Check that the station or mining map is available."
 			return FALSE
-		status = "Central Command acknowledges your acceptance. Assigned location: [mission.destination_room]. Tracking signal: [mission.gps_tag]. Follow the field orders to obtain requisition clearance."
+		status = "Central Command acknowledges your acceptance. Assigned location: [mission.destination_room]. Tracking signal: [mission.gps_tag]. Follow the field orders. [mission.kind == "xenomorph" ? "No rewards are assigned." : "Completion authorizes requisition clearance."]"
 		return TRUE
 	return FALSE
 
@@ -65,6 +65,16 @@ GLOBAL_DATUM_INIT(solo_expeditions, /datum/solo_expedition_board, new)
 	next_start = world.time + 1 MINUTES
 	roll_offers()
 	status = "Withdrawal acknowledged by Central Command. Requisition clearance forfeited. New tasking available in one minute."
+	return TRUE
+
+/// Close a completed science assignment without granting any reward.
+/datum/solo_expedition_board/proc/finish(id)
+	if(!active || active.id != id || active.kind != "xenomorph" || active.state != "complete")
+		return FALSE
+	active = null
+	completed++
+	roll_offers()
+	status = "Xenomorph containment recorded. No rewards issued. Updated tasking is available."
 	return TRUE
 
 /// Claim exactly one server-defined reward, retiring the offer before spawning anything.
@@ -142,6 +152,15 @@ GLOBAL_DATUM_INIT(solo_expeditions, /datum/solo_expedition_board, new)
 	gps_tag = "EXP-[id]"
 	var/site_name = pick("Cinder", "Echo", "Horizon", "Pioneer", "Wayfarer", "Prospector")
 	switch(kind)
+		if("xenomorph")
+			title = "Operation [site_name]: Xenomorph Containment"
+			description = "Science monitoring has detected a xenomorph burrow beneath the station. Contain the queen and her reinforcements before they overrun the base. No requisition rewards are assigned to this operation."
+			orders = list(
+				"Accept to open a burrow in an eligible station room. A hostile queen emerges immediately; follow the assigned room and GPS signal.",
+				"Three reinforcement waves each contain 2-4 random hunters, drones, or sentinels. The first arrives after 30 seconds, with 30 seconds between subsequent waves. No additional queens emerge.",
+				"After the first reinforcement wave, seal the burrow with a 12-second uninterrupted interaction, or destroy it to stop reinforcements. Eliminate the queen and every released xenomorph.",
+				"Destroying the burrow before the first reinforcement wave invalidates the assignment. No mission rewards are currently available.",
+			)
 		if("necropolis")
 			title = "Operation [site_name]: Necropolis Containment"
 			description = "Central Command's monitoring stations have detected a spatial disturbance consistent with Lavaland's Necropolis. An incursion into the station is imminent. Secure the manifestation site and prevent its creatures from reaching occupied departments. Successful containment authorizes the release of a relic from Command's recovered-artifact reserve."
@@ -192,24 +211,30 @@ GLOBAL_DATUM_INIT(solo_expeditions, /datum/solo_expedition_board, new)
 
 /// The station-defense missions share finite-wave, sabotage, death-tracking and cleanup rules.
 /datum/solo_expedition/proc/is_station_defense()
-	return kind == "siege" || kind == "necropolis"
+	return kind == "siege" || kind == "necropolis" || kind == "xenomorph"
 
 /// Wave numbers are one-based; no fourth wave can be dispatched.
 /datum/solo_expedition/proc/get_station_wave_size(wave_number)
 	if(wave_number < 1 || wave_number > 3)
 		return 0
+	if(kind == "xenomorph")
+		return rand(2, 4)
 	if(kind == "necropolis")
 		return wave_number + 2
 	return wave_number == 3 ? 3 : 2
 
 /// Only finite-spawn fauna are used: none can generate untracked broods or extra waves.
 /datum/solo_expedition/proc/get_station_wave_mob(index, wave_size)
+	if(kind == "xenomorph")
+		return pick(/mob/living/basic/alien, /mob/living/basic/alien/drone, /mob/living/basic/alien/sentinel)
 	if(kind == "necropolis")
 		return pick(/mob/living/basic/mining/watcher, /mob/living/basic/mining/goliath, /mob/living/basic/mining/basilisk)
 	return index == wave_size ? /mob/living/carbon/human/expedition_boarder/gunner : /mob/living/carbon/human/expedition_boarder
 
 /// Draw three different rewards once; reopening the UI cannot reroll an offer.
 /datum/solo_expedition/proc/configure_rewards()
+	if(kind == "xenomorph")
+		return FALSE
 	if(length(reward_options))
 		return FALSE
 	var/list/pool = get_mission_reward_pool()
@@ -223,6 +248,8 @@ GLOBAL_DATUM_INIT(solo_expeditions, /datum/solo_expedition_board, new)
 
 /// Mission-specific pools take precedence; the original mythical pool remains available unchanged.
 /datum/solo_expedition/proc/get_mission_reward_pool()
+	if(kind == "xenomorph")
+		return list()
 	if(kind == "siege" && difficulty == 4)
 		return get_syndicate_reward_pool()
 	return get_reward_pool(difficulty)
@@ -343,6 +370,18 @@ GLOBAL_DATUM_INIT(solo_expeditions, /datum/solo_expedition_board, new)
 	var/area/destination = get_area(site)
 	destination_room = destination.name
 	state = "active"
+	if(kind == "xenomorph")
+		beacon = new /obj/structure/expedition_beacon/siege/xenomorph(site, src)
+		var/list/exits = list()
+		for(var/turf/open/floor/exit in orange(1, site))
+			if(is_station_level(exit.z) && !exit.is_blocked_turf())
+				exits += exit
+		var/mob/living/basic/alien/queen/queen = new(pick(exits))
+		track_station_hostile(queen)
+		beacon.visible_message(span_danger("A xenomorph burrow opens and a queen emerges! Reinforcements will arrive in 30 seconds!"))
+		wave_timer = addtimer(CALLBACK(src, PROC_REF(dispatch_siege_wave)), 30 SECONDS, TIMER_STOPPABLE)
+		priority_announce("A xenomorph queen has emerged from a burrow in [destination_room]. Three reinforcement waves are expected at 30-second intervals. Contain the infestation. Tracking signal: [gps_tag]. No requisition rewards are assigned.", "Xenomorph Containment Order", sender_override = issuer, has_important_message = TRUE)
+		return TRUE
 	if(kind == "necropolis")
 		beacon = new /obj/structure/expedition_beacon/siege/necropolis(site, src)
 		beacon.visible_message(span_danger("A necropolis tendril bursts through the floor! Lavaland creatures will emerge in 45 seconds!"))
@@ -410,7 +449,7 @@ GLOBAL_DATUM_INIT(solo_expeditions, /datum/solo_expedition_board, new)
 		for(var/turf/open/floor/exit in orange(1, site))
 			if(is_station_level(exit.z) && !exit.is_blocked_turf())
 				free_exits++
-		if(free_exits >= (kind == "necropolis" ? 5 : 3))
+		if(free_exits >= (kind == "necropolis" ? 5 : (kind == "xenomorph" ? 4 : 3)))
 			return site
 	return null
 
@@ -437,19 +476,27 @@ GLOBAL_DATUM_INIT(solo_expeditions, /datum/solo_expedition_board, new)
 	for(var/index in 1 to wave_size)
 		var/mob_type = get_station_wave_mob(index, wave_size)
 		var/mob/living/boarder = new mob_type(pick_n_take(exits))
-		boarder.name = "[boarder.name] ([gps_tag])"
-		guards += boarder
-		living_guards += boarder
-		target_count++
-		RegisterSignal(boarder, COMSIG_LIVING_DEATH, PROC_REF(target_died))
-		RegisterSignal(boarder, COMSIG_QDELETING, PROC_REF(target_deleted))
-	beacon.visible_message(span_danger("[beacon] releases [kind == "necropolis" ? "creature" : "boarding"] wave [waves_sent] of 3!"))
+		track_station_hostile(boarder)
+	beacon.visible_message(span_danger("[beacon] releases [kind == "siege" ? "boarding" : "creature"] wave [waves_sent] of 3!"))
 	beacon.update_appearance()
 	if(waves_sent >= 3)
 		stop_siege_deployment()
 	else
-		wave_timer = addtimer(CALLBACK(src, PROC_REF(dispatch_siege_wave)), 40 SECONDS, TIMER_STOPPABLE)
+		wave_timer = addtimer(CALLBACK(src, PROC_REF(dispatch_siege_wave)), kind == "xenomorph" ? 30 SECONDS : 40 SECONDS, TIMER_STOPPABLE)
 	return TRUE
+
+/// Register the initial queen and every reinforcement with the same death/cleanup rules.
+/datum/solo_expedition/proc/track_station_hostile(mob/living/hostile)
+	hostile.name = "[hostile.name] ([gps_tag])"
+	if(istype(hostile, /mob/living/basic/alien))
+		var/mob/living/basic/alien/xeno = hostile
+		xeno.can_plant_weeds = FALSE
+		xeno.can_lay_eggs = FALSE
+	guards += hostile
+	living_guards += hostile
+	target_count++
+	RegisterSignal(hostile, COMSIG_LIVING_DEATH, PROC_REF(target_died))
+	RegisterSignal(hostile, COMSIG_QDELETING, PROC_REF(target_deleted))
 
 /// Stop reinforcements; spawned boarders must still be defeated.
 /datum/solo_expedition/proc/stop_siege_deployment()
@@ -467,11 +514,12 @@ GLOBAL_DATUM_INIT(solo_expeditions, /datum/solo_expedition_board, new)
 		if(wave_timer)
 			deltimer(wave_timer)
 			wave_timer = null
-		var/encounter = kind == "necropolis" ? "Necropolis breach" : "Boarding pod siege"
-		var/hostiles = kind == "necropolis" ? "Lavaland creatures" : "boarders"
-		priority_announce("Central Command confirms that all assigned [hostiles] in [destination_room] have been eliminated. The [encounter] is complete. Requisition clearance is granted: report to an expedition terminal to select your authorized item.", "[encounter] - All Clear", sender_override = issuer, has_important_message = TRUE)
+		var/encounter = kind == "xenomorph" ? "Xenomorph containment" : (kind == "necropolis" ? "Necropolis breach" : "Boarding pod siege")
+		var/hostiles = kind == "xenomorph" ? "xenomorphs" : (kind == "necropolis" ? "Lavaland creatures" : "boarders")
+		var/clearance = kind == "xenomorph" ? "No requisition rewards are assigned. Close the assignment at an expedition terminal." : "Requisition clearance is granted: report to an expedition terminal to select your authorized item."
+		priority_announce("Central Command confirms that all assigned [hostiles] in [destination_room] have been eliminated. The [encounter] is complete. [clearance]", "[encounter] - All Clear", sender_override = issuer, has_important_message = TRUE)
 		if(GLOB.solo_expeditions.active == src)
-			GLOB.solo_expeditions.status = "[encounter] complete in [destination_room]. All [hostiles] are dead. Open the expedition console to claim your mythical reward."
+			GLOB.solo_expeditions.status = "[encounter] complete in [destination_room]. All [hostiles] are dead. [clearance]"
 		var/obj/structure/expedition_beacon/pod = beacon
 		beacon = null
 		if(!QDELETED(pod))
@@ -488,7 +536,9 @@ GLOBAL_DATUM_INIT(solo_expeditions, /datum/solo_expedition_board, new)
 /datum/solo_expedition/proc/get_mission_data()
 	var/turf/site = get_turf(beacon)
 	var/reward_theme = "General tier [difficulty] relics"
-	if(kind == "siege")
+	if(kind == "xenomorph")
+		reward_theme = "No rewards assigned"
+	else if(kind == "siege")
 		reward_theme = "Captured Syndicate prototypes"
 	else if(kind == "necropolis")
 		reward_theme = "Recovered Necropolis relics"
@@ -671,6 +721,23 @@ GLOBAL_DATUM_INIT(solo_expeditions, /datum/solo_expedition_board, new)
 
 /obj/structure/expedition_beacon/siege/necropolis/update_overlays()
 	// Deliberately omit the parent supply-pod door, insignia, and glow overlays.
+	return list()
+
+/// Visual burrow only: deployment stays bounded by the mission, with no independent spawner.
+/obj/structure/expedition_beacon/siege/xenomorph
+	name = "xenomorph burrow"
+	desc = "A xenomorph tunnel through the decking. After its first reinforcement wave, interact for twelve seconds to seal it, or destroy it."
+	icon = 'icons/mob/simple/animal.dmi'
+	icon_state = "hole"
+	pixel_x = 0
+
+/obj/structure/expedition_beacon/siege/xenomorph/Initialize(mapload, datum/solo_expedition/owner)
+	. = ..()
+	if(mission)
+		name = "xenomorph burrow ([mission.gps_tag])"
+	new /obj/effect/temp_visual/small_smoke(get_turf(src))
+
+/obj/structure/expedition_beacon/siege/xenomorph/update_overlays()
 	return list()
 
 /// Harmless visual dust: no smoke chemistry, damage, or teleportation of nearby entities.
@@ -996,6 +1063,8 @@ GLOBAL_DATUM_INIT(solo_expeditions, /datum/solo_expedition_board, new)
 			return TRUE
 		if("abandon")
 			return board.abandon(params["id"])
+		if("finish")
+			return board.finish(params["id"])
 		if("claim")
 			return board.claim(params["id"], params["reward"], drop_location())
 	return FALSE

@@ -34,6 +34,7 @@ const offers = [
   assignment('three', 'hunt', 3),
   assignment('raid', 'siege', 4),
   assignment('breach', 'necropolis', 4),
+  { ...assignment('science', 'xenomorph', 4), rewards: [] },
 ];
 
 beforeEach(() => {
@@ -55,6 +56,7 @@ describe('Expedition mission tabs', () => {
       ['T3 Expedition', 'Assignment three'],
       ['Syndicate Signal', 'Assignment raid'],
       ['Lavaland Anomalies', 'Assignment breach'],
+      ['Science', 'Assignment science'],
       ['T1 Expedition', 'Assignment one'],
     ];
     let previous = 'Assignment one';
@@ -89,5 +91,19 @@ describe('Expedition mission tabs', () => {
     ).toBeDefined();
     expect(screen.getByText('Relic raid')).toBeDefined();
     expect(screen.getByText('Withdraw from Assignment')).toBeDefined();
+  });
+});
+
+describe('Science containment', () => {
+  it('shows a rewardless completion with a close control', () => {
+    store.set(gameDataAtom, {
+      status: 'Containment complete.', completed: 0, cooldown: 0,
+      active: { ...offers[5], state: 'complete' }, offers,
+    });
+    render(<ExpeditionConsole />);
+    expect(screen.getByText('Containment Complete')).toBeDefined();
+    expect(screen.getByText('Close Assignment')).toBeDefined();
+    expect(screen.queryByText('Central Command Requisition Clearance')).toBeNull();
+    expect(screen.getByText('No mission rewards are assigned.')).toBeDefined();
   });
 });

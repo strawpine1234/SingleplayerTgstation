@@ -3,7 +3,7 @@
 
 /datum/unit_test/expedition_console/Run()
 	var/datum/solo_expedition_board/board = new
-	TEST_ASSERT_EQUAL(length(board.offers), 5, "Each of the five mission tabs must have an offer.")
+	TEST_ASSERT_EQUAL(length(board.offers), 6, "Each of the six mission tabs must have an offer.")
 	var/list/kinds = list()
 	var/list/wilderness_tiers = list()
 	for(var/datum/solo_expedition/mission as anything in board.offers)
@@ -15,7 +15,7 @@
 			TEST_ASSERT(mission.difficulty in list(1, 2, 3), "Wilderness missions must belong to one of the three expedition tabs.")
 			TEST_ASSERT(!(mission.difficulty in wilderness_tiers), "A wilderness tier must not be offered twice.")
 			wilderness_tiers += mission.difficulty
-		TEST_ASSERT_EQUAL(length(mission.reward_options), 3, "Each offer must draw exactly three rewards.")
+		TEST_ASSERT_EQUAL(length(mission.reward_options), mission.kind == "xenomorph" ? 0 : 3, "Each offer must draw exactly three rewards.")
 		var/list/pool = mission.get_mission_reward_pool()
 		for(var/reward_id in mission.reward_options)
 			TEST_ASSERT(reward_id in pool, "Rewards must belong to the mission's tier.")
@@ -44,7 +44,7 @@
 	TEST_ASSERT(board.claim(old_id, chosen_reward, run_loc_floor_bottom_left), "Completed expedition must pay out.")
 	TEST_ASSERT_EQUAL(board.completed, 1, "A successful claim must be recorded once.")
 	TEST_ASSERT(!board.claim(old_id, chosen_reward, run_loc_floor_bottom_left), "Duplicate claims must not pay out.")
-	TEST_ASSERT_EQUAL(length(board.offers), 5, "A reward must refresh all five mission tabs.")
+	TEST_ASSERT_EQUAL(length(board.offers), 6, "A reward must refresh all six mission tabs.")
 	TEST_ASSERT(!board.accept_offer(old_id), "A stale offer ID must not select a replacement mission.")
 	var/obj/item/payment = locate(reward_type) in run_loc_floor_bottom_left
 	TEST_ASSERT_NOTNULL(payment, "The chosen artifact must be delivered.")
@@ -288,3 +288,45 @@
 	TEST_ASSERT_NULL(mission.beacon, "Completed breaches must not retain their objective.")
 	TEST_ASSERT(!mission.dispatch_siege_wave(), "Completed breaches must not spawn more creatures.")
 	qdel(mission)
+
+/// Science containment tracks the queen, excludes queens from reinforcements, and never pays rewards.
+/datum/unit_test/expedition_xenomorph
+
+/datum/unit_test/expedition_xenomorph/Run()
+	var/datum/solo_expedition/mission = new("xenomorph", "xeno_test")
+	TEST_ASSERT(mission.is_station_defense(), "Xenomorphs must use station defense lifecycle rules.")
+	TEST_ASSERT_EQUAL(length(mission.reward_options), 0, "Science missions must have no rewards.")
+	TEST_ASSERT_EQUAL(length(mission.get_mission_reward_pool()), 0, "Science must not expose a fallback reward pool.")
+	for(var/index in 1 to 30)
+		var/size = mission.get_station_wave_size(rand(1, 3))
+		TEST_ASSERT(size >= 2 && size <= 4, "Each reinforcement wave must contain 2-4 xenomorphs.")
+		var/mob_type = mission.get_station_wave_mob(1, size)
+		TEST_ASSERT(mob_type in list(/mob/living/basic/alien, /mob/living/basic/alien/drone, /mob/living/basic/alien/sentinel), "Reinforcements must use the non-queen whitelist.")
+	TEST_ASSERT_EQUAL(mission.get_station_wave_size(4), 0, "There must be no fourth reinforcement wave.")
+	mission.state = "active"
+	var/mob/living/basic/alien/queen/queen = allocate(/mob/living/basic/alien/queen, run_loc_floor_bottom_left)
+	mission.track_station_hostile(queen)
+	TEST_ASSERT_EQUAL(mission.target_count, 1, "The initial queen must count toward containment.")
+	TEST_ASSERT(!queen.can_lay_eggs && !queen.can_plant_weeds, "Mission aliens must not create untracked infestation sources.")
+	mission.waves_sent = 3
+	mission.stop_siege_deployment()
+	TEST_ASSERT_EQUAL(mission.state, "active", "The queen must be killed before completion.")
+	queen.death()
+	TEST_ASSERT_EQUAL(mission.state, "complete", "The queen's death must complete an exhausted, cleared burrow.")
+	TEST_ASSERT(!mission.dispatch_siege_wave(), "A completed mission must not dispatch more xenomorphs.")
+	qdel(mission)
+	var/datum/solo_expedition_board/board = new
+	for(var/datum/solo_expedition/offer as anything in board.offers)
+		if(offer.kind == "xenomorph")
+			board.active = offer
+			break
+	TEST_ASSERT_NOTNULL(board.active, "The Science tab must always offer a mission.")
+	TEST_ASSERT(!board.finish(board.active.id), "An unfinished mission cannot be closed successfully.")
+	board.active.state = "complete"
+	var/old_id = board.active.id
+	TEST_ASSERT(!board.claim(old_id, "mythic_blade", run_loc_floor_bottom_left), "Science completion must reject reward claims.")
+	TEST_ASSERT(board.finish(old_id), "Completed containment must close without requiring a reward.")
+	TEST_ASSERT_EQUAL(board.completed, 1, "Rewardless completion must be counted once.")
+	TEST_ASSERT_NULL(board.active, "Closing containment must free the board.")
+	TEST_ASSERT(!board.finish(old_id), "Duplicate completion must be rejected.")
+	qdel(board)
