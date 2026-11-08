@@ -34,7 +34,25 @@ Choose one of the three on completion. Unoffered items cannot be claimed.
 | 1 | Linked warp cubes; Immortality Talisman; Rapid Repeater design disk; wisp lantern; Book of Babel; linked paradox bags |
 | 2 | Resurrection crystal; Eye of God; Hierophant club; cleaving saw; Rod of Asclepius; flight potion |
 | 3 | High-frequency blade; godslayer armour; admin-only omnitool; divine vocal cords; berserker armour; staff of storms |
-| 4 (siege only) | Worldsplitter; Aegis of the Undying; Architect's Hand; Tempest Sovereign; Sovereign's Sceptre; Beastbane |
+| 4 (general mythical pool) | Worldsplitter; Aegis of the Undying; Architect's Hand; Tempest Sovereign; Sovereign's Sceptre; Beastbane |
+
+Tier-four missions can select their own exclusive reward pool. The existing
+boarding-pod siege is now titled **Syndicate Breach Raid** and draws three of
+these six new items, with one claim on completion:
+
+| Syndicate mythical reward | Abilities |
+| --- | --- |
+| Red Verdict | Activated red energy sword: 60 force, 70% block, 50 armour penetration. |
+| Crimson Bulwark | Activated hardlight shield: 90% block and eligible energy reflection; overwhelming attacks bypass it. |
+| Blackstar Carbine | Double-damage laser carbine with rapid automatic self-recharge. |
+| Ghost Legion assault set | Suit plus matching helmet: 80 melee/bullet/laser/energy protection, no slowdown. Not space-rated. |
+| Skeleton Protocol | Unlimited ranged emag supporting normal doors and machines. Hacking is destructive and still uses each target's normal emag handling. |
+| Phantom Relay | Chameleon projector with immediate reuse after disruption. Contact and attacks still break the disguise. |
+
+The original six general mythical items remain unchanged in the fallback T4 pool
+for other mission types. Lower-tier pools are unchanged. Raid reward cards show
+the Syndicate pool label, and the three choices are locked when the offer is
+generated. Claim requests cannot select unoffered items or a different pool.
 
 Each artifact retains its normal abilities, restrictions, and drawbacks. The red
 warp cube automatically creates its linked blue partner. The resurrection crystal
