@@ -48,9 +48,13 @@ const missionTabs = [
   { id: 't3', label: 'T3 Expedition' },
   { id: 'syndicate', label: 'Syndicate Signal' },
   { id: 'lavaland', label: 'Lavaland Anomalies' },
+  { id: 'science', label: 'Science' },
 ] as const;
 
 const missionTab = (mission: Mission) => {
+  if (mission.kind === 'xenomorph') {
+    return 'science';
+  }
   if (mission.kind === 'siege') {
     return 'syndicate';
   }
@@ -81,7 +85,7 @@ export const ExpeditionConsole = () => {
             Field operations require a GPS, suitable protection, and your own
             return transport. Station defence orders provide a room and tracking
             signal when contact is confirmed. All terminals share one active
-            assignment. Command releases one listed requisition on completion;
+            assignment. Reward-bearing assignments release one listed requisition on completion;
             collect it beside the terminal.
           </Box>
           {cooldown > 0 && (
@@ -129,7 +133,9 @@ export const ExpeditionConsole = () => {
                   {active.kills} / {active.targets}
                 </LabeledList.Item>
               )}
-              {(active.kind === 'siege' || active.kind === 'necropolis') && (
+              {(active.kind === 'siege' ||
+                active.kind === 'necropolis' ||
+                active.kind === 'xenomorph') && (
                 <>
                   <LabeledList.Item label="Waves deployed">
                     {active.waves} / 3
@@ -153,7 +159,18 @@ export const ExpeditionConsole = () => {
                 expedition to try another.
               </NoticeBox>
             )}
-            {active.state === 'complete' && (
+            {active.state === 'complete' && active.kind === 'xenomorph' && (
+              <Section title="Containment Complete">
+                <Box mb={1}>No mission rewards are assigned.</Box>
+                <Button
+                  color="good"
+                  onClick={() => act('finish', { id: active.id })}
+                >
+                  Close Assignment
+                </Button>
+              </Section>
+            )}
+            {active.state === 'complete' && active.kind !== 'xenomorph' && (
               <Section title="Central Command Requisition Clearance">
                 <Stack vertical>
                   {active.rewards.map((reward) => (
@@ -226,13 +243,18 @@ const MissionDetails = ({ mission }: { mission: Mission }) => (
     <Box color="good">Requisition reserve: {mission.reward_theme}</Box>
     <Box color="average">
       Difficulty: {mission.difficulty}/4
-      {mission.kind === 'siege' || mission.kind === 'necropolis'
+      {mission.kind === 'xenomorph'
+        ? ' · No rewards · Queen immediately · 3 waves of 2–4 xenomorphs, 30 seconds apart'
+        : mission.kind === 'siege' || mission.kind === 'necropolis'
         ? ` · Mythical rewards · 45-second preparation · waves: ${mission.kind === 'necropolis' ? '3 / 4 / 5 creatures' : '2 / 2 / 3 boarders'}`
         : ` · Field work: ${mission.work_seconds} seconds`}
     </Box>
     <Box color="label">
       Authorized selection:{' '}
-      {mission.rewards.map((reward) => reward.name).join(', ')}.
+      {mission.rewards.length
+        ? mission.rewards.map((reward) => reward.name).join(', ')
+        : 'None'}
+      .
     </Box>
   </Box>
 );
