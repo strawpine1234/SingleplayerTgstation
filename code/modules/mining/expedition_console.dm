@@ -14,7 +14,7 @@ GLOBAL_DATUM_INIT(solo_expeditions, /datum/solo_expedition_board, new)
 	/// Number of rewards successfully claimed this round.
 	var/completed = 0
 	/// Most recent board feedback.
-	var/status = "Choose an expedition. Bring mining protection, a GPS, and a way home."
+	var/status = "Central Command tasking uplink established. Review the briefs and prepare before accepting an assignment."
 
 /datum/solo_expedition_board/New()
 	. = ..()
@@ -50,7 +50,7 @@ GLOBAL_DATUM_INIT(solo_expeditions, /datum/solo_expedition_board, new)
 			active = null
 			status = "No clear site found for this mission. Check that the station or mining map is available."
 			return FALSE
-		status = "Expedition accepted. Destination: [mission.destination_room]. Follow GPS signal [mission.gps_tag], then return here for your reward."
+		status = "Central Command acknowledges your acceptance. Assigned location: [mission.destination_room]. Tracking signal: [mission.gps_tag]. Follow the field orders to obtain requisition clearance."
 		return TRUE
 	return FALSE
 
@@ -61,7 +61,7 @@ GLOBAL_DATUM_INIT(solo_expeditions, /datum/solo_expedition_board, new)
 	active = null
 	next_start = world.time + 1 MINUTES
 	roll_offers()
-	status = "Expedition abandoned. New departures available in one minute."
+	status = "Withdrawal acknowledged by Central Command. Requisition clearance forfeited. New tasking available in one minute."
 	return TRUE
 
 /// Claim exactly one server-defined reward, retiring the offer before spawning anything.
@@ -79,7 +79,7 @@ GLOBAL_DATUM_INIT(solo_expeditions, /datum/solo_expedition_board, new)
 	completed++
 	new reward_type(delivery_turf)
 	roll_offers()
-	status = "Reward delivered. Three new expeditions are available."
+	status = "Central Command has released your selected requisition. Collect it beside the terminal. Updated tasking is now available."
 	return TRUE
 
 /// A generated wilderness objective and the objects that belong exclusively to it.
@@ -92,6 +92,10 @@ GLOBAL_DATUM_INIT(solo_expeditions, /datum/solo_expedition_board, new)
 	var/title
 	/// Player-facing objective instructions.
 	var/description
+	/// Mission authority shown consistently in the briefing and announcements.
+	var/issuer = "Central Command - Special Assignments Office"
+	/// Operational requirements kept separate from the narrative briefing.
+	var/list/orders = list()
 	/// Difficulty from one to four; sieges exclusively award mythical tier-four loot.
 	var/difficulty
 	/// Server-owned reward choices, fixed when the offer is generated.
@@ -136,20 +140,52 @@ GLOBAL_DATUM_INIT(solo_expeditions, /datum/solo_expedition_board, new)
 	var/site_name = pick("Cinder", "Echo", "Horizon", "Pioneer", "Wayfarer", "Prospector")
 	switch(kind)
 		if("necropolis")
-			title = "Necropolis breach: [site_name]"
-			description = "A necropolis tendril erupts through a clear station floor without damaging the tile. Prepare for 45 seconds, then fight three waves of 3, 4, and 5 Lavaland creatures, 40 seconds apart. After the first wave, seal it with a 12-second interaction or destroy it to stop reinforcements. Kill every deployed creature to claim an original mythical relic. Destroying it before the first wave fails the mission."
+			title = "Operation [site_name]: Necropolis Containment"
+			description = "Central Command's monitoring stations have detected a spatial disturbance consistent with Lavaland's Necropolis. An incursion into the station is imminent. Secure the manifestation site and prevent its creatures from reaching occupied departments. Successful containment authorizes the release of a relic from Command's recovered-artifact reserve."
+			orders = list(
+				"On acceptance, Command will confirm the room and GPS signal. You have 45 seconds before the first creatures emerge through the intact decking.",
+				"Expect up to three waves of 3, 4, and 5 Lavaland creatures, with 40 seconds between waves.",
+				"After the first wave, interact with the tendril for 12 uninterrupted seconds to seal it, or destroy it to halt reinforcements. Eliminate every creature already released.",
+				"Threat verification requires a confirmed emergence. Destroying the tendril before its first wave invalidates this assignment.",
+				"Await Command's containment announcement, then return to an expedition terminal and select one authorized relic.",
+			)
 		if("siege")
-			title = "Syndicate breach raid: [site_name]"
-			description = "A hostile pod will dock at a clear station location. You have 45 seconds to prepare, followed by at most three waves (2, 2, and 3 boarders), 40 seconds apart. Disable its deployment controls with a 12-second interaction after the first wave, or destroy it, to stop reinforcements. Eliminate every deployed boarder to claim a mythical reward. Destroying the pod before any boarders deploy fails the mission."
+			title = "Operation [site_name]: Syndicate Breach Raid"
+			description = "Central Command's Signals Intelligence office has intercepted a Syndicate insertion order targeting this station. You are authorized to intercept the boarding party and neutralize its deployment pod. Command has approved the release of a captured prototype to personnel who successfully repel the incursion."
+			orders = list(
+				"Accept the tasking to receive the confirmed breach room and GPS signal. The pod's deployment bay opens 45 seconds after contact is established.",
+				"Expect up to three waves of 2, 2, and 3 boarders, with 40 seconds between waves. Each wave includes an armed gunner.",
+				"After the first wave, disable the pod with a 12-second uninterrupted interaction, or destroy it to prevent further deployments. Eliminate all boarders already on the station.",
+				"Threat verification requires a confirmed deployment. Destroying the pod before its first wave invalidates this assignment.",
+				"Await Command's all-clear, then return to an expedition terminal and select one authorized prototype.",
+			)
 		if("survey")
-			title = "[site_name] geological survey"
-			description = "Reach the beacon and remain beside it while collecting a geological survey. Return to a console afterward. No additional guards are deployed; native wildlife and weather remain dangerous."
+			title = "[site_name] Survey Commission"
+			description = "Central Command's Resource Assessment office requires ground-truth measurements before approving further extraction in this sector. A survey instrument will be positioned at your assigned coordinates. Reach it, complete the field readings, and return with the work certified."
+			orders = list(
+				"Follow the assigned GPS signal using your normal mining transport. Carry suitable environmental protection and arrange your return journey.",
+				"Interact with the survey beacon and remain beside it for [work_time / (1 SECONDS)] uninterrupted seconds to complete the readings.",
+				"This is a survey assignment, not a clearance order. Account for native wildlife and weather.",
+				"Return to an expedition terminal once the readings are complete and select one authorized requisition.",
+			)
 		if("salvage")
-			title = "Recover the [site_name] flight recorder"
-			description = "Reach the guarded beacon and extract its flight recorder. Bring the recorder back and use it on an expedition console. You may evade the guards."
+			title = "[site_name] Recorder Recovery"
+			description = "A contracted survey flight failed to deliver its final telemetry package. Central Command has traced the flight recorder's recovery beacon to hostile fauna territory. Retrieve the recorder intact so the loss can be investigated; clearing the surrounding wildlife is at your discretion."
+			orders = list(
+				"Travel to the assigned GPS signal with appropriate mining protection and a way home.",
+				"Evade or eliminate the creatures at the recovery site. Interact with the beacon for [work_time / (1 SECONDS)] uninterrupted seconds to extract the recorder.",
+				"Carry the recovered recorder back and use it on a powered expedition terminal. Only the assigned recorder satisfies this order.",
+				"After the terminal acknowledges receipt, select one authorized requisition.",
+			)
 		if("hunt")
-			title = "[site_name] fauna suppression"
-			description = "Kill the marked expedition fauna, then interact with the beacon to verify the site. Return to a console afterward. Only these assigned targets count."
+			title = "[site_name] Route Clearance"
+			description = "Hostile fauna are obstructing a route designated for future survey operations. Central Command's Expedition Security office has authorized a targeted clearance. Remove the designated threats and submit an on-site verification before requesting your requisition."
+			orders = list(
+				"Travel to the assigned GPS beacon with mining protection, combat equipment, and a return plan.",
+				"Eliminate every creature carrying this assignment's EXP identifier. Unrelated wildlife does not count toward clearance.",
+				"Once the designated targets are dead, interact with the beacon for [work_time / (1 SECONDS)] uninterrupted seconds to verify the site.",
+				"Return to an expedition terminal after verification and select one authorized requisition.",
+			)
 
 /// The station-defense missions share finite-wave, sabotage, death-tracking and cleanup rules.
 /datum/solo_expedition/proc/is_station_defense()
@@ -191,12 +227,12 @@ GLOBAL_DATUM_INIT(solo_expeditions, /datum/solo_expedition_board, new)
 /// Exclusive assault, defence, and infiltration loot for the Syndicate breach raid.
 /datum/solo_expedition/proc/get_syndicate_reward_pool()
 	return list(
-		"syndicate_sword" = list("name" = "Red Verdict", "description" = "Mythical red energy sword: 60 active force, 70% block chance, and 50 armour penetration. Activate before use.", "type" = /obj/item/melee/energy/sword/saber/red/expedition_syndicate),
-		"syndicate_shield" = list("name" = "Crimson Bulwark", "description" = "Hardlight shield with 90% blocking and 90% eligible energy reflection while active. Overwhelming attacks still bypass it.", "type" = /obj/item/shield/energy/expedition_syndicate),
-		"syndicate_carbine" = list("name" = "Blackstar Carbine", "description" = "Self-charging laser carbine with double projectile damage and rapid automatic recharge.", "type" = /obj/item/gun/energy/laser/expedition_syndicate),
-		"syndicate_armour" = list("name" = "Ghost Legion assault set", "description" = "Assault suit and matching helmet with 80 melee/bullet/laser/energy protection and no movement slowdown. Not a spacesuit.", "type" = /obj/item/clothing/suit/armor/vest/expedition_syndicate),
-		"syndicate_sequencer" = list("name" = "Skeleton Protocol", "description" = "Unlimited-use ranged emag that also supports ordinary door targets. Performs normal destructive emag hacks, not reversible access grants.", "type" = /obj/item/card/emag/bluespace/expedition_syndicate),
-		"syndicate_projector" = list("name" = "Phantom Relay", "description" = "Chameleon projector with immediate reuse after disruption. Contact and attacks still break its disguise; it is not invisibility.", "type" = /obj/item/chameleon/expedition_syndicate),
+		"syndicate_sword" = list("name" = "Red Verdict", "description" = /obj/item/melee/energy/sword/saber/red/expedition_syndicate::desc, "type" = /obj/item/melee/energy/sword/saber/red/expedition_syndicate),
+		"syndicate_shield" = list("name" = "Crimson Bulwark", "description" = /obj/item/shield/energy/expedition_syndicate::desc, "type" = /obj/item/shield/energy/expedition_syndicate),
+		"syndicate_carbine" = list("name" = "Blackstar Carbine", "description" = /obj/item/gun/energy/laser/expedition_syndicate::desc, "type" = /obj/item/gun/energy/laser/expedition_syndicate),
+		"syndicate_armour" = list("name" = "Ghost Legion assault set", "description" = /obj/item/clothing/suit/armor/vest/expedition_syndicate::desc, "type" = /obj/item/clothing/suit/armor/vest/expedition_syndicate),
+		"syndicate_sequencer" = list("name" = "Skeleton Protocol", "description" = /obj/item/card/emag/bluespace/expedition_syndicate::desc, "type" = /obj/item/card/emag/bluespace/expedition_syndicate),
+		"syndicate_projector" = list("name" = "Phantom Relay", "description" = /obj/item/chameleon/expedition_syndicate::desc, "type" = /obj/item/chameleon/expedition_syndicate),
 	)
 
 /// Separate general-purpose artifact pools, including the original six tier-four rewards.
@@ -222,21 +258,21 @@ GLOBAL_DATUM_INIT(solo_expeditions, /datum/solo_expedition_board, new)
 			)
 		if(3)
 			return list(
-				"blade" = list("name" = "High-frequency blade", "description" = "An exceptional energy blade normally unavailable from ordinary station production.", "type" = /obj/item/highfrequencyblade),
+				"blade" = list("name" = "High-frequency blade", "description" = "A resonant sword whose humming edge worries at the bonds of whatever it touches. Wield it in both hands for sweeping cuts.", "type" = /obj/item/highfrequencyblade),
 				"armour" = list("name" = "Godslayer armour", "description" = "Legendary protective armour with a powerful emergency healing effect.", "type" = /obj/item/clothing/suit/hooded/cloak/godslayer),
-				"omnitool" = list("name" = "Omnitool", "description" = "An admin-only multipurpose engineering tool, awarded here as expedition treasure.", "type" = /obj/item/debug/omnitool),
+				"omnitool" = list("name" = "Omnitool", "description" = "An unlisted engineering prototype with an articulated head for every field task. Use it in hand to choose a tool mode.", "type" = /obj/item/debug/omnitool),
 				"voice" = list("name" = "Divine vocal cords", "description" = "The Colossus's Voice of God organ. Requires surgical installation.", "type" = /obj/item/organ/vocal_cords/colossus),
 				"berserker" = list("name" = "Berserker armour", "description" = "Rare rage-fuelled armour; can be empowered with drake remains. Not initially spaceworthy.", "type" = /obj/item/clothing/suit/hooded/berserker),
 				"storms" = list("name" = "Staff of storms", "description" = "Legion's lightning staff, with its normal storm and thunder abilities.", "type" = /obj/item/storm_staff),
 			)
 		if(4)
 			return list(
-				"mythic_blade" = list("name" = "Worldsplitter", "description" = "Mythical high-frequency blade: 40 force and 60% block chance instead of 10 and 25%.", "type" = /obj/item/highfrequencyblade/expedition_mythic),
-				"mythic_armour" = list("name" = "Aegis of the Undying", "description" = "Godslayer armour with 1,000 emergency healing and a one-minute cooldown instead of ten minutes.", "type" = /obj/item/clothing/suit/hooded/cloak/godslayer/expedition_mythic),
-				"mythic_tool" = list("name" = "Architect's Hand", "description" = "Mythical omnitool with a 0.02 tool-time multiplier, five times faster than the original.", "type" = /obj/item/debug/omnitool/expedition_mythic),
-				"mythic_staff" = list("name" = "Tempest Sovereign", "description" = "Storm staff with twelve lightning charges and five-second charging instead of three charges and fifteen seconds.", "type" = /obj/item/storm_staff/expedition_mythic),
-				"mythic_club" = list("name" = "Sovereign's Sceptre", "description" = "Hierophant club with 60 melee force, four times the original, retaining its teleport and blast abilities.", "type" = /obj/item/hierophant_club/expedition_mythic),
-				"mythic_saw" = list("name" = "Beastbane", "description" = "Mythical cleaving saw: 35 closed force, 50 open force, and 60 bonus force against mining fauna and bosses.", "type" = /obj/item/melee/cleaving_saw/expedition_mythic),
+				"mythic_blade" = list("name" = "Worldsplitter", "description" = /obj/item/highfrequencyblade/expedition_mythic::desc, "type" = /obj/item/highfrequencyblade/expedition_mythic),
+				"mythic_armour" = list("name" = "Aegis of the Undying", "description" = /obj/item/clothing/suit/hooded/cloak/godslayer/expedition_mythic::desc, "type" = /obj/item/clothing/suit/hooded/cloak/godslayer/expedition_mythic),
+				"mythic_tool" = list("name" = "Architect's Hand", "description" = /obj/item/debug/omnitool/expedition_mythic::desc, "type" = /obj/item/debug/omnitool/expedition_mythic),
+				"mythic_staff" = list("name" = "Tempest Sovereign", "description" = /obj/item/storm_staff/expedition_mythic::desc, "type" = /obj/item/storm_staff/expedition_mythic),
+				"mythic_club" = list("name" = "Sovereign's Sceptre", "description" = /obj/item/hierophant_club/expedition_mythic::desc, "type" = /obj/item/hierophant_club/expedition_mythic),
+				"mythic_saw" = list("name" = "Beastbane", "description" = /obj/item/melee/cleaving_saw/expedition_mythic::desc, "type" = /obj/item/melee/cleaving_saw/expedition_mythic),
 			)
 	return list()
 
@@ -308,13 +344,13 @@ GLOBAL_DATUM_INIT(solo_expeditions, /datum/solo_expedition_board, new)
 		beacon = new /obj/structure/expedition_beacon/siege/necropolis(site, src)
 		beacon.visible_message(span_danger("A necropolis tendril bursts through the floor! Lavaland creatures will emerge in 45 seconds!"))
 		wave_timer = addtimer(CALLBACK(src, PROC_REF(dispatch_siege_wave)), 45 SECONDS, TIMER_STOPPABLE)
-		priority_announce("A necropolis tendril has erupted in [destination_room]. Lavaland creatures will emerge in 45 seconds. Prepare to contain the breach. GPS signal: [gps_tag].", "Necropolis Breach Alert")
+		priority_announce("Central Command confirms a Necropolis manifestation in [destination_room]. First emergence is expected in 45 seconds. Assigned personnel are to contain the breach. Tracking signal: [gps_tag].", "Necropolis Containment Order", sender_override = issuer, has_important_message = TRUE)
 		return TRUE
 	if(kind == "siege")
 		beacon = new /obj/structure/expedition_beacon/siege(site, src)
 		beacon.visible_message(span_danger("A hostile boarding pod docks! Its deployment bay will open in 45 seconds!"))
 		wave_timer = addtimer(CALLBACK(src, PROC_REF(dispatch_siege_wave)), 45 SECONDS, TIMER_STOPPABLE)
-		priority_announce("Hostile boarding pod detected in [destination_room]. Its deployment bay opens in 45 seconds. Prepare to repel boarders. GPS signal: [gps_tag].", "Boarding Pod Siege Alert")
+		priority_announce("Central Command confirms a Syndicate insertion pod in [destination_room]. Its deployment bay opens in 45 seconds. Assigned personnel are to intercept the boarding party and neutralize its deployment system. Tracking signal: [gps_tag].", "Boarding Interception Order", sender_override = issuer, has_important_message = TRUE)
 		return TRUE
 	beacon = new(site, src)
 	if(kind == "survey")
@@ -430,7 +466,7 @@ GLOBAL_DATUM_INIT(solo_expeditions, /datum/solo_expedition_board, new)
 			wave_timer = null
 		var/encounter = kind == "necropolis" ? "Necropolis breach" : "Boarding pod siege"
 		var/hostiles = kind == "necropolis" ? "Lavaland creatures" : "boarders"
-		priority_announce("All [hostiles] in [destination_room] have been eliminated. The [encounter] is complete. Your mythical reward is ready to claim at an expedition mission console.", "[encounter] Complete")
+		priority_announce("Central Command confirms that all assigned [hostiles] in [destination_room] have been eliminated. The [encounter] is complete. Requisition clearance is granted: report to an expedition terminal to select your authorized item.", "[encounter] - All Clear", sender_override = issuer, has_important_message = TRUE)
 		if(GLOB.solo_expeditions.active == src)
 			GLOB.solo_expeditions.status = "[encounter] complete in [destination_room]. All [hostiles] are dead. Open the expedition console to claim your mythical reward."
 		var/obj/structure/expedition_beacon/pod = beacon
@@ -450,9 +486,9 @@ GLOBAL_DATUM_INIT(solo_expeditions, /datum/solo_expedition_board, new)
 	var/turf/site = get_turf(beacon)
 	var/reward_theme = "General tier [difficulty] relics"
 	if(kind == "siege")
-		reward_theme = "Syndicate mythical arsenal"
+		reward_theme = "Captured Syndicate prototypes"
 	else if(kind == "necropolis")
-		reward_theme = "Original Necropolis mythical relics"
+		reward_theme = "Recovered Necropolis relics"
 	var/list/rewards = list()
 	for(var/reward_id in reward_options)
 		var/list/choice = reward_options[reward_id]
@@ -462,6 +498,8 @@ GLOBAL_DATUM_INIT(solo_expeditions, /datum/solo_expedition_board, new)
 		"kind" = kind,
 		"title" = title,
 		"description" = description,
+		"issuer" = issuer,
+		"orders" = orders.Copy(),
 		"difficulty" = difficulty,
 		"reward_theme" = reward_theme,
 		"rewards" = rewards,
@@ -511,6 +549,8 @@ GLOBAL_DATUM_INIT(solo_expeditions, /datum/solo_expedition_board, new)
 	. = ..()
 	if(mission)
 		. += span_notice(mission.description)
+		for(var/order in mission.orders)
+			. += span_notice(order)
 		. += span_notice("Assigned fauna eliminated: [mission.kills]/[mission.target_count].")
 
 /obj/structure/expedition_beacon/attack_hand(mob/living/user, list/modifiers)
@@ -736,36 +776,36 @@ GLOBAL_DATUM_INIT(solo_expeditions, /datum/solo_expedition_board, new)
 /// Mythical artifacts use existing abilities with explicitly stronger statistics.
 /obj/item/highfrequencyblade/expedition_mythic
 	name = "Worldsplitter"
-	desc = "A mythical resonating blade. Four times the normal cutting force and a 60% parry chance."
+	desc = "A pale seam of light runs along this resonant blade, singing softly whenever it passes near metal. The edge seems less interested in cutting matter than in persuading it to separate. Wield it in both hands to command its sweeping cuts."
 	force = 40
 	block_chance = 60
 
 /obj/item/clothing/suit/hooded/cloak/godslayer/expedition_mythic
 	name = "Aegis of the Undying"
-	desc = "Mythical godslayer armour. Emergency healing is doubled and recharges in one minute."
+	desc = "Beneath these frost-dark plates, something ancient keeps a patient watch over the wearer. When its bearer falters, the armour releases a surge of restorative warmth. The presence must gather its strength before it can intervene again."
 	heal_amount = 1000
 	effect_cooldown_time = 1 MINUTES
 
 /obj/item/debug/omnitool/expedition_mythic
 	name = "Architect's Hand"
-	desc = "A mythical omnitool with a 0.02 tool-time multiplier. Use it in hand to choose a tool mode."
+	desc = "A seamless instrument whose working head unfolds into whatever shape the task demands. No manufacturer has admitted to producing it. Use it in hand to select the tool you require."
 	toolspeed = 0.02
 
 /obj/item/storm_staff/expedition_mythic
 	name = "Tempest Sovereign"
-	desc = "A mythical storm staff holding twelve lightning charges, with five-second charging."
+	desc = "The air around this staff tastes of rain and hot copper. Captive lightning moves beneath its surface, eager for release. Direct its thunder at a distant target, or raise it to disperse a passing storm; its spent charge gradually returns."
 	max_thunder_charges = 12
 	thunder_charges = 12
 	thunder_charge_time = 5 SECONDS
 
 /obj/item/hierophant_club/expedition_mythic
 	name = "Sovereign's Sceptre"
-	desc = "A mythical Hierophant relic. Four times the original melee force, with its familiar blast and teleport powers."
+	desc = "Violet geometry shifts beneath the polished face of this heavy sceptre. Each strike carries the final authority of a long-dead ruler. Its surviving mechanisms can loose resonant blasts and fold the bearer back toward a placed beacon."
 	force = 60
 
 /obj/item/melee/cleaving_saw/expedition_mythic
 	name = "Beastbane"
-	desc = "A mythical cleaving saw with 35 closed force, 50 open force, and 60 bonus force against mining fauna and bosses."
+	desc = "Old hunting marks have been cut into the spine of this folding saw. Its teeth catch eagerly against the plated hides of the wastes. Unfold the blade into a long cleaver to sweep through the creatures gathered around you."
 	force = 35
 	open_force = 50
 	faction_bonus_force = 60
@@ -773,14 +813,14 @@ GLOBAL_DATUM_INIT(solo_expeditions, /datum/solo_expedition_board, new)
 /// Syndicate breach-raid mythical gear uses normal weapon, shield, armour and hacking APIs.
 /obj/item/melee/energy/sword/saber/red/expedition_syndicate
 	name = "Red Verdict"
-	desc = "A mythical Syndicate assault blade. Activate it for 60 force, 70% blocking and 50 armour penetration."
+	desc = "An unmarked hilt fitted with a crimson focusing crystal. Once ignited, its narrow blade casts the room in the colour of a sealed execution order. Activate it before entering combat."
 	active_force = 60
 	block_chance = 70
 	armour_penetration = 50
 
 /obj/item/shield/energy/expedition_syndicate
 	name = "Crimson Bulwark"
-	desc = "A mythical Syndicate hardlight shield. While active it blocks 90% of ordinary attacks and reflects 90% of eligible energy projectiles."
+	desc = "Overlapping layers of red hardlight unfold from a compact forearm unit. The field is designed to turn aside incoming blows and return compatible energy fire to its sender. Activate it before use; overwhelming attacks can still break through its defence."
 	block_chance = 90
 	reflection_probability = 90
 	active_force = 25
@@ -788,7 +828,7 @@ GLOBAL_DATUM_INIT(solo_expeditions, /datum/solo_expedition_board, new)
 
 /obj/item/gun/energy/laser/expedition_syndicate
 	name = "Blackstar Carbine"
-	desc = "A mythical Syndicate laser carbine with double projectile damage and a rapidly self-recharging cell."
+	desc = "A restricted-issue carbine with its serial number burned out of the receiver. A quiet internal generator continually replenishes the weapon's cell, while a dark focusing lens shapes each shot into a clean scarlet pulse."
 	color = COLOR_SOFT_RED
 	projectile_damage_multiplier = 2
 	selfcharge = TRUE
@@ -809,7 +849,7 @@ GLOBAL_DATUM_INIT(solo_expeditions, /datum/solo_expedition_board, new)
 
 /obj/item/clothing/suit/armor/vest/expedition_syndicate
 	name = "Ghost Legion assault suit"
-	desc = "Mythical Syndicate armour covering the torso and limbs, with no movement slowdown. Not rated for space."
+	desc = "Flexible black plates ride over a fitted assault harness, shielding the torso and limbs without burdening the wearer. A matching helmet accompanies the suit. The set is intended for close boarding actions and is not sealed against vacuum."
 	color = COLOR_SOFT_RED
 	armor_type = /datum/armor/expedition_syndicate_mythical
 	body_parts_covered = CHEST|GROIN|ARMS|HANDS|LEGS|FEET
@@ -822,7 +862,7 @@ GLOBAL_DATUM_INIT(solo_expeditions, /datum/solo_expedition_board, new)
 
 /obj/item/clothing/head/helmet/expedition_syndicate
 	name = "Ghost Legion helmet"
-	desc = "The matching helmet for a mythical Ghost Legion assault suit. Not rated for space."
+	desc = "A severe, featureless helmet issued with the Ghost Legion assault harness. Layered composites shield the head while leaving the wearer free to move. It is not vacuum-rated."
 	color = COLOR_SOFT_RED
 	armor_type = /datum/armor/expedition_syndicate_mythical
 	slowdown = 0
@@ -830,7 +870,7 @@ GLOBAL_DATUM_INIT(solo_expeditions, /datum/solo_expedition_board, new)
 
 /obj/item/card/emag/bluespace/expedition_syndicate
 	name = "Skeleton Protocol"
-	desc = "A mythical ranged Syndicate sequencer. Applies normal destructive emag effects to machines and doors without consuming charges."
+	desc = "A confiscated intrusion device carrying a library of forbidden machine instructions. Its transmitter can corrupt compatible safeguards from a distance without expending disposable charges. These are destructive overrides: compromised doors and machinery may not return to normal operation."
 
 /obj/item/card/emag/bluespace/expedition_syndicate/Initialize(mapload)
 	. = ..()
@@ -838,7 +878,7 @@ GLOBAL_DATUM_INIT(solo_expeditions, /datum/solo_expedition_board, new)
 
 /obj/item/chameleon/expedition_syndicate
 	name = "Phantom Relay"
-	desc = "A mythical disguise projector that recovers immediately after disruption. Physical contact and attacks still break the disguise."
+	desc = "A stolen counterintelligence projector that wraps its operator in the likeness of a scanned object. Its image can be re-established as soon as a disruption clears, but impacts and physical contact still expose the person hiding inside. Scan an object, then use the projector in hand to assume its appearance."
 	color = COLOR_SOFT_RED
 
 /obj/item/chameleon/expedition_syndicate/disrupt(delete_dummy = TRUE)
@@ -872,7 +912,7 @@ GLOBAL_DATUM_INIT(solo_expeditions, /datum/solo_expedition_board, new)
 /// Buildable console for accepting expeditions and collecting one reward on return.
 /obj/machinery/computer/expedition
 	name = "expedition mission console"
-	desc = "Offers remote mining-planet expeditions with a choice of rewards. Bring a GPS, appropriate protection, and transport."
+	desc = "A secure tasking uplink to Central Command's Special Assignments Office. Review field orders, accept assignments, and collect authorized requisitions upon completion."
 	circuit = /obj/item/circuitboard/computer/expedition
 
 /obj/machinery/computer/expedition/ui_interact(mob/user, datum/tgui/ui)
@@ -925,6 +965,6 @@ GLOBAL_DATUM_INIT(solo_expeditions, /datum/solo_expedition_board, new)
 	mission.evidence = null
 	recorder.mission = null
 	qdel(recorder)
-	GLOB.solo_expeditions.status = "Flight recorder submitted. Choose your expedition reward."
+	GLOB.solo_expeditions.status = "Central Command acknowledges receipt of the assigned flight recorder. Requisition clearance granted; select one authorized item."
 	to_chat(user, span_notice("Flight recorder submitted. Open the console to choose your reward."))
 	return ITEM_INTERACT_SUCCESS
