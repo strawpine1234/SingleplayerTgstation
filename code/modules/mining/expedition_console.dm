@@ -137,7 +137,7 @@ GLOBAL_DATUM_INIT(solo_expeditions, /datum/solo_expedition_board, new)
 	var/site_name = pick("Cinder", "Echo", "Horizon", "Pioneer", "Wayfarer", "Prospector")
 	switch(kind)
 		if("siege")
-			title = "[site_name] boarding pod siege"
+			title = "Syndicate breach raid: [site_name]"
 			description = "A hostile pod will dock at a clear station location. You have 45 seconds to prepare, followed by at most three waves (2, 2, and 3 boarders), 40 seconds apart. Disable its deployment controls with a 12-second interaction after the first wave, or destroy it, to stop reinforcements. Eliminate every deployed boarder to claim a mythical reward. Destroying the pod before any boarders deploy fails the mission."
 		if("survey")
 			title = "[site_name] geological survey"
@@ -153,7 +153,7 @@ GLOBAL_DATUM_INIT(solo_expeditions, /datum/solo_expedition_board, new)
 /datum/solo_expedition/proc/configure_rewards()
 	if(length(reward_options))
 		return FALSE
-	var/list/pool = get_reward_pool(difficulty)
+	var/list/pool = get_mission_reward_pool()
 	var/list/remaining_ids = list()
 	for(var/reward_id in pool)
 		remaining_ids += reward_id
@@ -162,7 +162,24 @@ GLOBAL_DATUM_INIT(solo_expeditions, /datum/solo_expedition_board, new)
 		reward_options[reward_id] = pool[reward_id]
 	return TRUE
 
-/// Separate, non-overlapping artifact pools for the three difficulty tiers.
+/// Mission-specific pools take precedence; the original mythical pool remains available unchanged.
+/datum/solo_expedition/proc/get_mission_reward_pool()
+	if(kind == "siege" && difficulty == 4)
+		return get_syndicate_reward_pool()
+	return get_reward_pool(difficulty)
+
+/// Exclusive assault, defence, and infiltration loot for the Syndicate breach raid.
+/datum/solo_expedition/proc/get_syndicate_reward_pool()
+	return list(
+		"syndicate_sword" = list("name" = "Red Verdict", "description" = "Mythical red energy sword: 60 active force, 70% block chance, and 50 armour penetration. Activate before use.", "type" = /obj/item/melee/energy/sword/saber/red/expedition_syndicate),
+		"syndicate_shield" = list("name" = "Crimson Bulwark", "description" = "Hardlight shield with 90% blocking and 90% eligible energy reflection while active. Overwhelming attacks still bypass it.", "type" = /obj/item/shield/energy/expedition_syndicate),
+		"syndicate_carbine" = list("name" = "Blackstar Carbine", "description" = "Self-charging laser carbine with double projectile damage and rapid automatic recharge.", "type" = /obj/item/gun/energy/laser/expedition_syndicate),
+		"syndicate_armour" = list("name" = "Ghost Legion assault set", "description" = "Assault suit and matching helmet with 80 melee/bullet/laser/energy protection and no movement slowdown. Not a spacesuit.", "type" = /obj/item/clothing/suit/armor/vest/expedition_syndicate),
+		"syndicate_sequencer" = list("name" = "Skeleton Protocol", "description" = "Unlimited-use ranged emag that also supports ordinary door targets. Performs normal destructive emag hacks, not reversible access grants.", "type" = /obj/item/card/emag/bluespace/expedition_syndicate),
+		"syndicate_projector" = list("name" = "Phantom Relay", "description" = "Chameleon projector with immediate reuse after disruption. Contact and attacks still break its disguise; it is not invisibility.", "type" = /obj/item/chameleon/expedition_syndicate),
+	)
+
+/// Separate general-purpose artifact pools, including the original six tier-four rewards.
 /datum/solo_expedition/proc/get_reward_pool(tier)
 	switch(tier)
 		if(1)
@@ -413,6 +430,7 @@ GLOBAL_DATUM_INIT(solo_expeditions, /datum/solo_expedition_board, new)
 		"title" = title,
 		"description" = description,
 		"difficulty" = difficulty,
+		"reward_theme" = kind == "siege" && difficulty == 4 ? "Syndicate mythical arsenal" : "General tier [difficulty] relics",
 		"rewards" = rewards,
 		"work_seconds" = work_time / (1 SECONDS),
 		"state" = state,
@@ -695,6 +713,81 @@ GLOBAL_DATUM_INIT(solo_expeditions, /datum/solo_expedition_board, new)
 	force = 35
 	open_force = 50
 	faction_bonus_force = 60
+
+/// Syndicate breach-raid mythical gear uses normal weapon, shield, armour and hacking APIs.
+/obj/item/melee/energy/sword/saber/red/expedition_syndicate
+	name = "Red Verdict"
+	desc = "A mythical Syndicate assault blade. Activate it for 60 force, 70% blocking and 50 armour penetration."
+	active_force = 60
+	block_chance = 70
+	armour_penetration = 50
+
+/obj/item/shield/energy/expedition_syndicate
+	name = "Crimson Bulwark"
+	desc = "A mythical Syndicate hardlight shield. While active it blocks 90% of ordinary attacks and reflects 90% of eligible energy projectiles."
+	block_chance = 90
+	reflection_probability = 90
+	active_force = 25
+	can_clumsy_use = TRUE
+
+/obj/item/gun/energy/laser/expedition_syndicate
+	name = "Blackstar Carbine"
+	desc = "A mythical Syndicate laser carbine with double projectile damage and a rapidly self-recharging cell."
+	color = COLOR_SOFT_RED
+	projectile_damage_multiplier = 2
+	selfcharge = TRUE
+	charge_delay = 1
+	self_charge_amount = 400
+	fire_delay = 0.5 SECONDS
+
+/datum/armor/expedition_syndicate_mythical
+	melee = 80
+	bullet = 80
+	laser = 80
+	energy = 80
+	bomb = 70
+	bio = 80
+	fire = 100
+	acid = 100
+	wound = 50
+
+/obj/item/clothing/suit/armor/vest/expedition_syndicate
+	name = "Ghost Legion assault suit"
+	desc = "Mythical Syndicate armour covering the torso and limbs, with no movement slowdown. Not rated for space."
+	color = COLOR_SOFT_RED
+	armor_type = /datum/armor/expedition_syndicate_mythical
+	body_parts_covered = CHEST|GROIN|ARMS|HANDS|LEGS|FEET
+	slowdown = 0
+	resistance_flags = FIRE_PROOF | ACID_PROOF
+
+/obj/item/clothing/suit/armor/vest/expedition_syndicate/Initialize(mapload)
+	. = ..()
+	new /obj/item/clothing/head/helmet/expedition_syndicate(drop_location())
+
+/obj/item/clothing/head/helmet/expedition_syndicate
+	name = "Ghost Legion helmet"
+	desc = "The matching helmet for a mythical Ghost Legion assault suit. Not rated for space."
+	color = COLOR_SOFT_RED
+	armor_type = /datum/armor/expedition_syndicate_mythical
+	slowdown = 0
+	resistance_flags = FIRE_PROOF | ACID_PROOF
+
+/obj/item/card/emag/bluespace/expedition_syndicate
+	name = "Skeleton Protocol"
+	desc = "A mythical ranged Syndicate sequencer. Applies normal destructive emag effects to machines and doors without consuming charges."
+
+/obj/item/card/emag/bluespace/expedition_syndicate/Initialize(mapload)
+	. = ..()
+	type_blacklist = list()
+
+/obj/item/chameleon/expedition_syndicate
+	name = "Phantom Relay"
+	desc = "A mythical disguise projector that recovers immediately after disruption. Physical contact and attacks still break the disguise."
+	color = COLOR_SOFT_RED
+
+/obj/item/chameleon/expedition_syndicate/disrupt(delete_dummy = TRUE)
+	. = ..()
+	can_use = TRUE
 
 /// Unique salvage proof, bound to one offer and consumed when submitted.
 /obj/item/expedition_evidence

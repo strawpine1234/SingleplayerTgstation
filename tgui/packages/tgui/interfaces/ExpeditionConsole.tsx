@@ -16,6 +16,7 @@ type Mission = {
   title: string;
   description: string;
   difficulty: number;
+  reward_theme: string;
   rewards: { id: string; name: string; description: string }[];
   work_seconds: number;
   state: string;
@@ -158,6 +159,7 @@ export const ExpeditionConsole = () => {
 const MissionDetails = ({ mission }: { mission: Mission }) => (
   <Box mb={2}>
     <Box mb={1}>{mission.description}</Box>
+    <Box color="good">Reward pool: {mission.reward_theme}</Box>
     <Box color="average">
       Difficulty: {mission.difficulty}/4
       {mission.kind === 'siege'

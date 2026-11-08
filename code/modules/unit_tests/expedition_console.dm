@@ -9,7 +9,7 @@
 		kinds |= mission.kind
 		TEST_ASSERT(mission.difficulty >= 1 && mission.difficulty <= 4, "Difficulty must be within the advertised range.")
 		TEST_ASSERT_EQUAL(length(mission.reward_options), 3, "Each offer must draw exactly three rewards.")
-		var/list/pool = mission.get_reward_pool(mission.difficulty)
+		var/list/pool = mission.get_mission_reward_pool()
 		for(var/reward_id in mission.reward_options)
 			TEST_ASSERT(reward_id in pool, "Rewards must belong to the mission's tier.")
 	TEST_ASSERT_EQUAL(length(kinds), 3, "The board must offer three distinct objective types.")
@@ -29,7 +29,7 @@
 	selected.state = "complete"
 	TEST_ASSERT(!board.claim(old_id, "forged_reward", run_loc_floor_bottom_left), "Unknown rewards must be rejected.")
 	TEST_ASSERT_EQUAL(board.active, selected, "Rejected claims must preserve the mission.")
-	var/list/full_pool = selected.get_reward_pool(selected.difficulty)
+	var/list/full_pool = selected.get_mission_reward_pool()
 	for(var/reward_id in full_pool)
 		if(!(reward_id in selected.reward_options))
 			TEST_ASSERT(!board.claim(old_id, reward_id, run_loc_floor_bottom_left), "A valid but unoffered reward must not be claimable.")
@@ -149,3 +149,31 @@
 	qdel(mission)
 	TEST_ASSERT(!QDELETED(boarder), "Mission cleanup must preserve a dead boarder's body.")
 	TEST_ASSERT_NOTNULL(boarder.get_organ_slot(ORGAN_SLOT_BRAIN), "The corpse must retain its organs.")
+
+/// Raid loot is exclusive, while the original generic mythical pool remains intact.
+/datum/unit_test/expedition_syndicate_rewards
+
+/datum/unit_test/expedition_syndicate_rewards/Run()
+	var/datum/solo_expedition/raid = new("siege", "syndicate_pool_test")
+	var/list/general_pool = raid.get_reward_pool(4)
+	var/list/raid_pool = raid.get_mission_reward_pool()
+	TEST_ASSERT_EQUAL(length(general_pool), 6, "The original mythical pool must be retained.")
+	TEST_ASSERT("mythic_blade" in general_pool, "Worldsplitter must remain in the general mythical pool.")
+	TEST_ASSERT_EQUAL(length(raid_pool), 6, "The raid must have six exclusive mythical rewards.")
+	TEST_ASSERT_EQUAL(length(raid.reward_options), 3, "The raid must draw exactly three choices.")
+	for(var/reward_id in raid_pool)
+		TEST_ASSERT(!(reward_id in general_pool), "Raid and generic mythical IDs must not overlap.")
+		var/list/definition = raid_pool[reward_id]
+		TEST_ASSERT(ispath(definition["type"], /obj/item), "Raid rewards must be valid items.")
+		for(var/general_id in general_pool)
+			var/list/general_definition = general_pool[general_id]
+			TEST_ASSERT_NOTEQUAL(definition["type"], general_definition["type"], "Raid rewards must be separate item variants.")
+	for(var/reward_id in raid.reward_options)
+		TEST_ASSERT(reward_id in raid_pool, "The raid must never draw generic mythical loot.")
+	var/datum/solo_expedition/other = new("hunt", "general_pool_test")
+	other.difficulty = 4
+	var/list/other_pool = other.get_mission_reward_pool()
+	TEST_ASSERT("mythic_blade" in other_pool, "Other tier-four mission types must use the original mythical pool.")
+	TEST_ASSERT(!("syndicate_sword" in other_pool), "Other mission types must not receive raid-exclusive loot.")
+	qdel(other)
+	qdel(raid)
