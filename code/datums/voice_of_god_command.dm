@@ -26,7 +26,8 @@ GLOBAL_LIST_INIT(voice_of_god_commands, init_voice_of_god_commands())
  * The first matching command (from a list of static datums) the listeners must obey,
  * and the return value of this proc the cooldown variable of the command dictates. (only relevant for things with cooldowns i guess)
  */
-/proc/voice_of_god(message, mob/living/user, list/span_list, base_multiplier = 1, include_speaker = FALSE, forced = null, ignore_spam = FALSE)
+/// organic_resonance lets the Necropolis organ reach organic minds regardless of hearing or wards.
+/proc/voice_of_god(message, mob/living/user, list/span_list, base_multiplier = 1, include_speaker = FALSE, forced = null, ignore_spam = FALSE, organic_resonance = FALSE)
 	var/log_message = uppertext(message)
 	var/is_cultie = IS_CULTIST(user)
 	if(LAZYLEN(span_list) && is_cultie)
@@ -43,9 +44,14 @@ GLOBAL_LIST_INIT(voice_of_god_commands, init_voice_of_god_commands())
 	// string to remove at the end of the following of the following loop, so saying "Burn Mr. Hopkins" doesn't also burn the HoP later when we check jobs.
 	var/to_remove_string
 	var/list/candidates = get_hearers_in_view(8, user) - (include_speaker ? null : user)
+	if(organic_resonance)
+		candidates = list()
+		for(var/mob/living/nearby in hearers(8, user))
+			if(nearby != user && nearby.stat != DEAD && (nearby.mob_biotypes & MOB_ORGANIC) && !(nearby.mob_biotypes & MOB_ROBOTIC))
+				candidates += nearby
 	for(var/mob/living/candidate in candidates)
-		if(candidate.stat != DEAD && !HAS_TRAIT(candidate, TRAIT_DEAF))
-			if(candidate.can_block_magic(MAGIC_RESISTANCE_HOLY|MAGIC_RESISTANCE_MIND, charge_cost = 0))
+		if(candidate.stat != DEAD && (organic_resonance || !HAS_TRAIT(candidate, TRAIT_DEAF)))
+			if(!organic_resonance && candidate.can_block_magic(MAGIC_RESISTANCE_HOLY|MAGIC_RESISTANCE_MIND, charge_cost = 0))
 				to_chat(user, span_userdanger("Something's wrong! [candidate] seems to be resisting your commands."))
 				continue
 
@@ -87,7 +93,7 @@ GLOBAL_LIST_INIT(voice_of_god_commands, init_voice_of_god_commands())
 
 	for(var/datum/voice_of_god_command/command as anything in GLOB.voice_of_god_commands)
 		if(findtext(message, command.trigger))
-			. = command.execute(listeners, user, power_multiplier, message) || command.cooldown
+			. = command.execute(listeners, user, power_multiplier, message, organic_resonance) || command.cooldown
 			break
 
 	if(!forced)
@@ -116,7 +122,7 @@ GLOBAL_LIST_INIT(voice_of_god_commands, init_voice_of_god_commands())
  * * user: the one who casted Voice of God
  * * power_multiplier: multiplies the power of the command, most times.
  */
-/datum/voice_of_god_command/proc/execute(list/listeners, mob/living/user, power_multiplier = 1, message)
+/datum/voice_of_god_command/proc/execute(list/listeners, mob/living/user, power_multiplier = 1, message, organic_resonance = FALSE)
 	return
 
 /// This command knocks the listeners down.
@@ -124,18 +130,18 @@ GLOBAL_LIST_INIT(voice_of_god_commands, init_voice_of_god_commands())
 	trigger = "drop|fall|trip|knockdown"
 	cooldown = COOLDOWN_STUN
 
-/datum/voice_of_god_command/knockdown/execute(list/listeners, mob/living/user, power_multiplier = 1, message)
+/datum/voice_of_god_command/knockdown/execute(list/listeners, mob/living/user, power_multiplier = 1, message, organic_resonance = FALSE)
 	for(var/mob/living/target as anything in listeners)
-		target.Knockdown(4 SECONDS * power_multiplier)
+		target.Knockdown(4 SECONDS * power_multiplier, ignore_canstun = organic_resonance)
 
 /// This command stops the listeners from moving.
 /datum/voice_of_god_command/immobilize
 	trigger = "stop|wait|stand\\s*still|hold\\s*on|halt"
 	cooldown = COOLDOWN_STUN
 
-/datum/voice_of_god_command/immobilize/execute(list/listeners, mob/living/user, power_multiplier = 1, message)
+/datum/voice_of_god_command/immobilize/execute(list/listeners, mob/living/user, power_multiplier = 1, message, organic_resonance = FALSE)
 	for(var/mob/living/target as anything in listeners)
-		target.Immobilize(4 SECONDS * power_multiplier)
+		target.Immobilize(4 SECONDS * power_multiplier, ignore_canstun = organic_resonance)
 
 /// This command makes carbon listeners throw up like Mr. Creosote.
 /datum/voice_of_god_command/vomit

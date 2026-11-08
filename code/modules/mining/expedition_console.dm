@@ -269,7 +269,7 @@ GLOBAL_DATUM_INIT(solo_expeditions, /datum/solo_expedition_board, new)
 			return list(
 				"mythic_blade" = list("name" = "Worldsplitter", "description" = /obj/item/highfrequencyblade/expedition_mythic::desc, "type" = /obj/item/highfrequencyblade/expedition_mythic),
 				"mythic_armour" = list("name" = "Aegis of the Undying", "description" = /obj/item/clothing/suit/hooded/cloak/godslayer/expedition_mythic::desc, "type" = /obj/item/clothing/suit/hooded/cloak/godslayer/expedition_mythic),
-				"mythic_tool" = list("name" = "Architect's Hand", "description" = /obj/item/debug/omnitool/expedition_mythic::desc, "type" = /obj/item/debug/omnitool/expedition_mythic),
+				"mythic_voice" = list("name" = "Vox of the Necropolis", "description" = /obj/item/organ/vocal_cords/colossus/expedition_mythic::desc, "type" = /obj/item/organ/vocal_cords/colossus/expedition_mythic),
 				"mythic_staff" = list("name" = "Tempest Sovereign", "description" = /obj/item/storm_staff/expedition_mythic::desc, "type" = /obj/item/storm_staff/expedition_mythic),
 				"mythic_club" = list("name" = "Sovereign's Sceptre", "description" = /obj/item/hierophant_club/expedition_mythic::desc, "type" = /obj/item/hierophant_club/expedition_mythic),
 				"mythic_saw" = list("name" = "Beastbane", "description" = /obj/item/melee/cleaving_saw/expedition_mythic::desc, "type" = /obj/item/melee/cleaving_saw/expedition_mythic),
@@ -786,10 +786,14 @@ GLOBAL_DATUM_INIT(solo_expeditions, /datum/solo_expedition_board, new)
 	heal_amount = 1000
 	effect_cooldown_time = 1 MINUTES
 
-/obj/item/debug/omnitool/expedition_mythic
-	name = "Architect's Hand"
-	desc = "A seamless instrument whose working head unfolds into whatever shape the task demands. No manufacturer has admitted to producing it. Use it in hand to select the tool you require."
-	toolspeed = 0.02
+/obj/item/organ/vocal_cords/colossus/expedition_mythic
+	name = "Vox of the Necropolis"
+	desc = "Obsidian filaments cradle a throat that still murmurs beneath its crust of ash. Once grafted into a living bearer, its ancient decrees resonate through nearby organic minds, beast and mortal alike. The speaker alone is spared. Requires surgical installation; use Voice of God to issue commands such as HALT, SUFFER, or HEAL. Its resonance reaches visible creatures within eight tiles, even those that cannot hear."
+	base_multiplier = 3
+
+/obj/item/organ/vocal_cords/colossus/expedition_mythic/speak_with(message)
+	var/cooldown = voice_of_god(uppertext(message), owner, spans, base_multiplier, organic_resonance = TRUE)
+	next_command = world.time + (cooldown * cooldown_mod)
 
 /obj/item/storm_staff/expedition_mythic
 	name = "Tempest Sovereign"

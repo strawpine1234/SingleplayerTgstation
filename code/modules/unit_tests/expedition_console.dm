@@ -113,10 +113,41 @@
 	TEST_ASSERT(/obj/item/highfrequencyblade/expedition_mythic::force > /obj/item/highfrequencyblade::force, "Mythical blade must be stronger.")
 	TEST_ASSERT(/obj/item/highfrequencyblade/expedition_mythic::block_chance > /obj/item/highfrequencyblade::block_chance, "Mythical blade must block more often.")
 	TEST_ASSERT(/obj/item/clothing/suit/hooded/cloak/godslayer/expedition_mythic::effect_cooldown_time < /obj/item/clothing/suit/hooded/cloak/godslayer::effect_cooldown_time, "Mythical armour must recharge faster.")
-	TEST_ASSERT(/obj/item/debug/omnitool/expedition_mythic::toolspeed < /obj/item/debug/omnitool::toolspeed, "Mythical omnitool must work faster.")
+	TEST_ASSERT_EQUAL(/obj/item/organ/vocal_cords/colossus/expedition_mythic::base_multiplier, 3 * /obj/item/organ/vocal_cords/colossus::base_multiplier, "Mythical vocal cords must have triple command power.")
 	TEST_ASSERT(/obj/item/storm_staff/expedition_mythic::max_thunder_charges > /obj/item/storm_staff::max_thunder_charges, "Mythical staff must hold more charges.")
 	TEST_ASSERT(/obj/item/hierophant_club/expedition_mythic::force > /obj/item/hierophant_club::force, "Mythical club must hit harder.")
 	TEST_ASSERT(/obj/item/melee/cleaving_saw/expedition_mythic::open_force > /obj/item/melee/cleaving_saw::open_force, "Mythical saw must hit harder when opened.")
+
+/// Organic resonance must reach humans, pets and stun-immune fauna without reaching its bearer or machines.
+/datum/unit_test/expedition_necropolis_voice
+
+/datum/unit_test/expedition_necropolis_voice/Run()
+	var/mob/living/carbon/human/speaker = allocate(/mob/living/carbon/human/consistent, run_loc_floor_bottom_left)
+	var/mob/living/carbon/human/person = allocate(/mob/living/carbon/human/consistent, run_loc_floor_bottom_left)
+	var/mob/living/basic/pet/dog/corgi/pet = allocate(/mob/living/basic/pet/dog/corgi, run_loc_floor_bottom_left)
+	pet.setMaxHealth(100) // Keep the pet alive so its damage counter does not cap at its original health.
+	var/mob/living/basic/mining/goliath/monster = allocate(/mob/living/basic/mining/goliath, run_loc_floor_bottom_left)
+	var/mob/living/basic/machine = allocate(/mob/living/basic, run_loc_floor_bottom_left)
+	machine.mob_biotypes = MOB_ROBOTIC
+	ADD_TRAIT(person, TRAIT_DEAF, REF(src))
+	ADD_TRAIT(monster, TRAIT_STUNIMMUNE, REF(src))
+	var/obj/item/organ/vocal_cords/colossus/expedition_mythic/cords = allocate(/obj/item/organ/vocal_cords/colossus/expedition_mythic)
+	TEST_ASSERT(cords.Insert(speaker, special = TRUE, movement_flags = DELETE_IF_REPLACED), "The mythical organ must support normal surgical installation.")
+	cords.speak_with("SUFFER")
+	TEST_ASSERT_EQUAL(cords.next_command, world.time + 1 MINUTES, "The organ must retain the normal damage-command cooldown.")
+	TEST_ASSERT_EQUAL(person.get_brute_loss(), 45, "Organic humans must receive triple the normal command effect, even when deaf.")
+	TEST_ASSERT_EQUAL(pet.get_brute_loss(), 45, "Organic pets must be affected without a client or human anatomy.")
+	TEST_ASSERT_EQUAL(monster.get_brute_loss(), 45, "Organic monsters must be affected.")
+	TEST_ASSERT_EQUAL(speaker.get_brute_loss(), 0, "The speaker must never affect themselves.")
+	TEST_ASSERT_EQUAL(machine.get_brute_loss(), 0, "Robotic targets must be excluded.")
+	// Ignore chat spam throttling for subsequent checks of the shared command pipeline.
+	voice_of_god("HALT", speaker, null, base_multiplier = 3, include_speaker = TRUE, forced = "unit test", ignore_spam = TRUE, organic_resonance = TRUE)
+	TEST_ASSERT(monster.IsImmobilized(), "Resonance must bypass ordinary organic stun immunity.")
+	TEST_ASSERT(!speaker.IsImmobilized(), "Even include_speaker cannot override the organ's self-exclusion.")
+	TEST_ASSERT(!machine.IsImmobilized(), "Resonance must never control a machine.")
+	monster.SetImmobilized(0, ignore_canstun = TRUE)
+	voice_of_god("HALT", speaker, null, forced = "unit test", ignore_spam = TRUE)
+	TEST_ASSERT(!monster.IsImmobilized(), "Ordinary divine vocal cords must retain normal immunity checks.")
 
 /// Boarders have crew anatomy and persistent corpses, with verified mission death tracking.
 /datum/unit_test/expedition_carbon_boarders
