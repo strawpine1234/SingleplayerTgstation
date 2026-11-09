@@ -15,7 +15,7 @@
 			TEST_ASSERT(mission.difficulty in list(1, 2, 3), "Wilderness missions must belong to one of the three expedition tabs.")
 			TEST_ASSERT(!(mission.difficulty in wilderness_tiers), "A wilderness tier must not be offered twice.")
 			wilderness_tiers += mission.difficulty
-		TEST_ASSERT_EQUAL(length(mission.reward_options), mission.kind == "xenomorph" ? 0 : 3, "Each offer must draw exactly three rewards.")
+		TEST_ASSERT_EQUAL(length(mission.reward_options), 3, "Each offer must draw exactly three rewards.")
 		var/list/pool = mission.get_mission_reward_pool()
 		for(var/reward_id in mission.reward_options)
 			TEST_ASSERT(reward_id in pool, "Rewards must belong to the mission's tier.")
@@ -289,14 +289,14 @@
 	TEST_ASSERT(!mission.dispatch_siege_wave(), "Completed breaches must not spawn more creatures.")
 	qdel(mission)
 
-/// Science containment tracks the queen, excludes queens from reinforcements, and never pays rewards.
+/// Science containment tracks the queen, excludes queens from reinforcements, and awards Science T4 loot.
 /datum/unit_test/expedition_xenomorph
 
 /datum/unit_test/expedition_xenomorph/Run()
 	var/datum/solo_expedition/mission = new("xenomorph", "xeno_test")
 	TEST_ASSERT(mission.is_station_defense(), "Xenomorphs must use station defense lifecycle rules.")
-	TEST_ASSERT_EQUAL(length(mission.reward_options), 0, "Science missions must have no rewards.")
-	TEST_ASSERT_EQUAL(length(mission.get_mission_reward_pool()), 0, "Science must not expose a fallback reward pool.")
+	TEST_ASSERT_EQUAL(length(mission.reward_options), 3, "Science missions must lock three reward choices.")
+	TEST_ASSERT_EQUAL(length(mission.get_mission_reward_pool()), 6, "Science must have its own six-item pool.")
 	for(var/index in 1 to 30)
 		var/size = mission.get_station_wave_size(rand(1, 3))
 		TEST_ASSERT(size >= 2 && size <= 4, "Each reinforcement wave must contain 2-4 xenomorphs.")
@@ -321,14 +321,15 @@
 			board.active = offer
 			break
 	TEST_ASSERT_NOTNULL(board.active, "The Science tab must always offer a mission.")
-	TEST_ASSERT(!board.finish(board.active.id), "An unfinished mission cannot be closed successfully.")
-	board.active.state = "complete"
 	var/old_id = board.active.id
-	TEST_ASSERT(!board.claim(old_id, "mythic_blade", run_loc_floor_bottom_left), "Science completion must reject reward claims.")
-	TEST_ASSERT(board.finish(old_id), "Completed containment must close without requiring a reward.")
-	TEST_ASSERT_EQUAL(board.completed, 1, "Rewardless completion must be counted once.")
-	TEST_ASSERT_NULL(board.active, "Closing containment must free the board.")
-	TEST_ASSERT(!board.finish(old_id), "Duplicate completion must be rejected.")
+	var/choice = board.active.reward_options[1]
+	TEST_ASSERT(!board.claim(old_id, choice, run_loc_floor_bottom_left), "Unfinished science must not award loot.")
+	board.active.state = "complete"
+	TEST_ASSERT(!board.claim(old_id, "mythic_blade", run_loc_floor_bottom_left), "Science must reject rewards from another pool.")
+	TEST_ASSERT(board.claim(old_id, choice, run_loc_floor_bottom_left), "Science completion must award its selected prototype.")
+	TEST_ASSERT_EQUAL(board.completed, 1, "Science completion must count once.")
+	TEST_ASSERT_NULL(board.active, "Claiming the prototype must free the board.")
+	TEST_ASSERT(!board.claim(old_id, choice, run_loc_floor_bottom_left), "Duplicate reward claims must be rejected.")
 	qdel(board)
 
 /// Check the actual mission sprite files/states, including large queen and visible burrow art.
@@ -352,3 +353,118 @@
 	TEST_ASSERT_EQUAL(burrow.invisibility, 0, "The burrow must remain visible.")
 	TEST_ASSERT_EQUAL(burrow.alpha, 255, "The burrow must remain opaque.")
 	TEST_ASSERT_EQUAL(length(burrow.overlays), 0, "The burrow must not display supply-pod overlays.")
+
+/// Exercise actual reward instances, including the extra capacity and loaded synthesizer.
+/datum/unit_test/expedition_science_artifacts
+
+/datum/unit_test/expedition_science_artifacts/Run()
+	var/datum/solo_expedition/mission = new("xenomorph", "science_artifacts")
+	var/list/pool = mission.get_mission_reward_pool()
+	var/list/icon_names = list()
+	for(var/reward_id in pool)
+		var/list/reward = pool[reward_id]
+		var/obj/item/artifact = allocate(reward["type"], run_loc_floor_bottom_left)
+		TEST_ASSERT(artifact.icon_state in icon_states(artifact.icon), "[artifact] must have a working ground sprite.")
+		TEST_ASSERT(!(artifact.icon_state in icon_names), "Science items must have distinct icons.")
+		icon_names += artifact.icon_state
+		TEST_ASSERT(length(artifact.desc) > 40, "Science items must explain how to use them.")
+	qdel(mission)
+	var/obj/item/gun/energy/recharge/ebow/science_royal/synthesizer = allocate(/obj/item/gun/energy/recharge/ebow/science_royal)
+	TEST_ASSERT(synthesizer.can_shoot(), "The synthesizer must start with one usable dart.")
+	var/obj/item/storage/backpack/holding/science_vault/backpack = allocate(/obj/item/storage/backpack/holding/science_vault)
+	var/mob/living/carbon/human/user = allocate(/mob/living/carbon/human/consistent)
+	var/obj/item/paper/last_inserted
+	for(var/index in 1 to 40)
+		last_inserted = allocate(/obj/item/paper)
+		TEST_ASSERT(backpack.atom_storage.attempt_insert(last_inserted, user, messages = FALSE), "The vault must fit more items than a regular bag of holding.")
+	TEST_ASSERT(backpack.retrieve_vault_item(user, last_inserted), "The catalog must retrieve items beyond the normal inventory grid.")
+	TEST_ASSERT_EQUAL(last_inserted.loc, user, "Retrieved items must go into the user's hands.")
+	TEST_ASSERT(!backpack.retrieve_vault_item(user, last_inserted), "The catalog must reject stale entries.")
+
+/// The symbiote is a real implant, and nutrition is a cost only when it heals.
+/datum/unit_test/expedition_science_symbiote
+
+/datum/unit_test/expedition_science_symbiote/Run()
+	var/mob/living/carbon/human/host = allocate(/mob/living/carbon/human/consistent)
+	var/obj/item/implanter/science_symbiote/injector = allocate(/obj/item/implanter/science_symbiote)
+	var/obj/item/implant/science_symbiote/symbiote = injector.imp
+	injector.attack(host, host)
+	TEST_ASSERT_EQUAL(symbiote.imp_in, host, "The injector must implant the symbiote.")
+	host.set_nutrition(NUTRITION_LEVEL_HUNGRY + 100)
+	host.adjust_brute_loss(30)
+	var/previous_damage = host.get_brute_loss()
+	var/previous_nutrition = host.nutrition
+	symbiote.process(2)
+	TEST_ASSERT(host.get_brute_loss() < previous_damage, "A fed host must heal.")
+	TEST_ASSERT(host.nutrition < previous_nutrition, "Healing must consume nutrition.")
+	host.set_nutrition(NUTRITION_LEVEL_HUNGRY)
+	previous_damage = host.get_brute_loss()
+	symbiote.process(2)
+	TEST_ASSERT_EQUAL(host.get_brute_loss(), previous_damage, "A hungry host must not heal.")
+
+/// The core grants a repeatable form change without replacing the original body or gear.
+/datum/unit_test/expedition_science_slime
+
+/datum/unit_test/expedition_science_slime/Run()
+	var/mob/living/carbon/human/user = allocate(/mob/living/carbon/human/consistent)
+	var/obj/item/paper/gear = allocate(/obj/item/paper, user)
+	var/obj/item/science_slime_core/core = allocate(/obj/item/science_slime_core)
+	core.attack_self(user)
+	var/datum/action/cooldown/spell/shapeshift/science_slime/action = locate() in user.actions
+	TEST_ASSERT_NOTNULL(action, "Absorbing the core must grant Metamorphosis.")
+	var/turf/original_floor = get_turf(user)
+	action.Trigger()
+	var/mob/living/basic/slime/science_form/slime = action.owner
+	TEST_ASSERT(istype(slime), "Metamorphosis must actually create a playable slime body.")
+	TEST_ASSERT_EQUAL(user.loc, slime, "The original body must be retained.")
+	TEST_ASSERT_EQUAL(gear.loc, user, "The original body's equipment must be retained.")
+	TEST_ASSERT_NULL(slime.reproduce_action, "The alternate form must not produce extra slimes.")
+	action.next_use_time = -1
+	action.Trigger()
+	TEST_ASSERT_EQUAL(action.owner, user, "The same action must restore the original body.")
+	TEST_ASSERT_EQUAL(user.loc, original_floor, "The restored body must be on the floor.")
+	TEST_ASSERT_EQUAL(gear.loc, user, "Reverting must restore the original equipment.")
+
+/// Removing the phase source mid-use must exit the holder and clear phase traits.
+/datum/unit_test/expedition_science_phase
+
+/datum/unit_test/expedition_science_phase/Run()
+	var/mob/living/carbon/human/user = allocate(/mob/living/carbon/human/consistent)
+	var/obj/item/science_phase_belt/belt = allocate(/obj/item/science_phase_belt)
+	var/datum/action/cooldown/spell/jaunt/ethereal_jaunt/science_phase/phase = allocate(/datum/action/cooldown/spell/jaunt/ethereal_jaunt/science_phase, belt)
+	phase.Grant(user)
+	var/turf/original_floor = get_turf(user)
+	phase.Trigger()
+	TEST_ASSERT(istype(user.loc, phase.jaunt_type), "The belt must initiate phasing.")
+	phase.Remove(user)
+	TEST_ASSERT_EQUAL(user.loc, original_floor, "Removing the belt action must return the wearer to a clear turf.")
+	TEST_ASSERT(!HAS_TRAIT(user, TRAIT_MAGICALLY_PHASED), "The phase trait must be cleaned up on removal.")
+
+
+/// A real scan uploads a sequence once, even when the same type is later a corpse.
+/datum/unit_test/expedition_science_sequencer
+
+/datum/unit_test/expedition_science_sequencer/Run()
+	var/datum/techweb/science/research = locate(/datum/techweb/science) in SSresearch.techwebs
+	TEST_ASSERT_NOTNULL(research, "The station science network must be present.")
+	var/mob/living/carbon/human/user = allocate(/mob/living/carbon/human/consistent)
+	var/mob/living/carbon/human/specimen = allocate(/mob/living/carbon/human/consistent)
+	var/obj/item/science_sequencer/sequencer = allocate(/obj/item/science_sequencer)
+	TEST_ASSERT(user.put_in_hands(sequencer), "The test user must hold the sequencer.")
+	var/was_sequenced = (specimen.type in GLOB.expedition_sequenced_species)
+	GLOB.expedition_sequenced_species -= specimen.type
+	var/was_generating = research.should_generate_points
+	research.should_generate_points = FALSE
+	var/old_points = research.research_points[TECHWEB_POINT_TYPE_GENERIC] || 0
+	sequencer.interact_with_atom(specimen, user)
+	var/after_first = research.research_points[TECHWEB_POINT_TYPE_GENERIC]
+	specimen.death()
+	sequencer.interact_with_atom(specimen, user)
+	var/after_second = research.research_points[TECHWEB_POINT_TYPE_GENERIC]
+	if(!was_sequenced)
+		GLOB.expedition_sequenced_species -= specimen.type
+	research.should_generate_points = was_generating
+	research.research_points[TECHWEB_POINT_TYPE_GENERIC] = old_points
+	TEST_ASSERT_EQUAL(after_first, old_points + 500, "A novel sequence must upload 500 points.")
+	TEST_ASSERT_EQUAL(after_second, after_first, "Re-scanning a known type must not award points again.")
+

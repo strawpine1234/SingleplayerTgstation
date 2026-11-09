@@ -159,18 +159,7 @@ export const ExpeditionConsole = () => {
                 expedition to try another.
               </NoticeBox>
             )}
-            {active.state === 'complete' && active.kind === 'xenomorph' && (
-              <Section title="Containment Complete">
-                <Box mb={1}>No mission rewards are assigned.</Box>
-                <Button
-                  color="good"
-                  onClick={() => act('finish', { id: active.id })}
-                >
-                  Close Assignment
-                </Button>
-              </Section>
-            )}
-            {active.state === 'complete' && active.kind !== 'xenomorph' && (
+            {active.state === 'complete' && (
               <Section title="Central Command Requisition Clearance">
                 <Stack vertical>
                   {active.rewards.map((reward) => (
@@ -244,7 +233,7 @@ const MissionDetails = ({ mission }: { mission: Mission }) => (
     <Box color="average">
       Difficulty: {mission.difficulty}/4
       {mission.kind === 'xenomorph'
-        ? ' · No rewards · Queen immediately · 3 waves of 2–4 xenomorphs, 30 seconds apart'
+        ? ' · Science T4 mythical rewards · Queen immediately · 3 waves of 2–4 xenomorphs, 30 seconds apart'
         : mission.kind === 'siege' || mission.kind === 'necropolis'
         ? ` · Mythical rewards · 45-second preparation · waves: ${mission.kind === 'necropolis' ? '3 / 4 / 5 creatures' : '2 / 2 / 3 boarders'}`
         : ` · Field work: ${mission.work_seconds} seconds`}

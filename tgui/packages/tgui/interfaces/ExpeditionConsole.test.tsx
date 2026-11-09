@@ -34,7 +34,7 @@ const offers = [
   assignment('three', 'hunt', 3),
   assignment('raid', 'siege', 4),
   assignment('breach', 'necropolis', 4),
-  { ...assignment('science', 'xenomorph', 4), rewards: [] },
+  assignment('science', 'xenomorph', 4),
 ];
 
 beforeEach(() => {
@@ -95,15 +95,14 @@ describe('Expedition mission tabs', () => {
 });
 
 describe('Science containment', () => {
-  it('shows a rewardless completion with a close control', () => {
+  it('shows Science T4 reward selection on completion', () => {
     store.set(gameDataAtom, {
       status: 'Containment complete.', completed: 0, cooldown: 0,
       active: { ...offers[5], state: 'complete' }, offers,
     });
     render(<ExpeditionConsole />);
-    expect(screen.getByText('Containment Complete')).toBeDefined();
-    expect(screen.getByText('Close Assignment')).toBeDefined();
-    expect(screen.queryByText('Central Command Requisition Clearance')).toBeNull();
-    expect(screen.getByText('No mission rewards are assigned.')).toBeDefined();
+    expect(screen.getByText('Central Command Requisition Clearance')).toBeDefined();
+    expect(screen.getByText('Relic science')).toBeDefined();
+    expect(screen.queryByText('Close Assignment')).toBeNull();
   });
 });

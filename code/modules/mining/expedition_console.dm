@@ -53,7 +53,7 @@ GLOBAL_DATUM_INIT(solo_expeditions, /datum/solo_expedition_board, new)
 			active = null
 			status = "No clear site found for this mission. Check that the station or mining map is available."
 			return FALSE
-		status = "Central Command acknowledges your acceptance. Assigned location: [mission.destination_room]. Tracking signal: [mission.gps_tag]. Follow the field orders. [mission.kind == "xenomorph" ? "No rewards are assigned." : "Completion authorizes requisition clearance."]"
+		status = "Central Command acknowledges your acceptance. Assigned location: [mission.destination_room]. Tracking signal: [mission.gps_tag]. Follow the field orders. Completion authorizes requisition clearance."
 		return TRUE
 	return FALSE
 
@@ -65,16 +65,6 @@ GLOBAL_DATUM_INIT(solo_expeditions, /datum/solo_expedition_board, new)
 	next_start = world.time + 1 MINUTES
 	roll_offers()
 	status = "Withdrawal acknowledged by Central Command. Requisition clearance forfeited. New tasking available in one minute."
-	return TRUE
-
-/// Close a completed science assignment without granting any reward.
-/datum/solo_expedition_board/proc/finish(id)
-	if(!active || active.id != id || active.kind != "xenomorph" || active.state != "complete")
-		return FALSE
-	active = null
-	completed++
-	roll_offers()
-	status = "Xenomorph containment recorded. No rewards issued. Updated tasking is available."
 	return TRUE
 
 /// Claim exactly one server-defined reward, retiring the offer before spawning anything.
@@ -154,12 +144,12 @@ GLOBAL_DATUM_INIT(solo_expeditions, /datum/solo_expedition_board, new)
 	switch(kind)
 		if("xenomorph")
 			title = "Operation [site_name]: Xenomorph Containment"
-			description = "Science monitoring has detected a xenomorph burrow beneath the station. Contain the queen and her reinforcements before they overrun the base. No requisition rewards are assigned to this operation."
+			description = "Science monitoring has detected a xenomorph burrow beneath the station. Contain the queen and her reinforcements before they overrun the base. Successful containment authorizes one item from the Science T4 mythical reserve."
 			orders = list(
 				"Accept to open a burrow in an eligible station room. A hostile queen emerges immediately; follow the assigned room and GPS signal.",
 				"Three reinforcement waves each contain 2-4 random hunters, bruisers, or sentinels. The first arrives after 30 seconds, with 30 seconds between subsequent waves. No additional queens emerge.",
 				"After the first reinforcement wave, seal the burrow with a 12-second uninterrupted interaction, or destroy it to stop reinforcements. Eliminate the queen and every released xenomorph.",
-				"Destroying the burrow before the first reinforcement wave invalidates the assignment. No mission rewards are currently available.",
+				"Destroying the burrow before the first reinforcement wave invalidates the assignment. Return to the console after containment and choose one offered Science T4 mythical reward.",
 			)
 		if("necropolis")
 			title = "Operation [site_name]: Necropolis Containment"
@@ -233,8 +223,6 @@ GLOBAL_DATUM_INIT(solo_expeditions, /datum/solo_expedition_board, new)
 
 /// Draw three different rewards once; reopening the UI cannot reroll an offer.
 /datum/solo_expedition/proc/configure_rewards()
-	if(kind == "xenomorph")
-		return FALSE
 	if(length(reward_options))
 		return FALSE
 	var/list/pool = get_mission_reward_pool()
@@ -249,7 +237,7 @@ GLOBAL_DATUM_INIT(solo_expeditions, /datum/solo_expedition_board, new)
 /// Mission-specific pools take precedence; the original mythical pool remains available unchanged.
 /datum/solo_expedition/proc/get_mission_reward_pool()
 	if(kind == "xenomorph")
-		return list()
+		return get_science_reward_pool()
 	if(kind == "siege" && difficulty == 4)
 		return get_syndicate_reward_pool()
 	return get_reward_pool(difficulty)
@@ -380,7 +368,7 @@ GLOBAL_DATUM_INIT(solo_expeditions, /datum/solo_expedition_board, new)
 		track_station_hostile(queen)
 		beacon.visible_message(span_danger("A xenomorph burrow opens and a queen emerges! Reinforcements will arrive in 30 seconds!"))
 		wave_timer = addtimer(CALLBACK(src, PROC_REF(dispatch_siege_wave)), 30 SECONDS, TIMER_STOPPABLE)
-		priority_announce("A xenomorph queen has emerged from a burrow in [destination_room]. Three reinforcement waves are expected at 30-second intervals. Contain the infestation. Tracking signal: [gps_tag]. No requisition rewards are assigned.", "Xenomorph Containment Order", sender_override = issuer, has_important_message = TRUE)
+		priority_announce("A xenomorph queen has emerged from a burrow in [destination_room]. Three reinforcement waves are expected at 30-second intervals. Contain the infestation. Tracking signal: [gps_tag]. Science T4 requisition clearance is authorized on successful containment.", "Xenomorph Containment Order", sender_override = issuer, has_important_message = TRUE)
 		return TRUE
 	if(kind == "necropolis")
 		beacon = new /obj/structure/expedition_beacon/siege/necropolis(site, src)
@@ -516,7 +504,7 @@ GLOBAL_DATUM_INIT(solo_expeditions, /datum/solo_expedition_board, new)
 			wave_timer = null
 		var/encounter = kind == "xenomorph" ? "Xenomorph containment" : (kind == "necropolis" ? "Necropolis breach" : "Boarding pod siege")
 		var/hostiles = kind == "xenomorph" ? "xenomorphs" : (kind == "necropolis" ? "Lavaland creatures" : "boarders")
-		var/clearance = kind == "xenomorph" ? "No requisition rewards are assigned. Close the assignment at an expedition terminal." : "Requisition clearance is granted: report to an expedition terminal to select your authorized item."
+		var/clearance = "Requisition clearance is granted: report to an expedition terminal to select your authorized item."
 		priority_announce("Central Command confirms that all assigned [hostiles] in [destination_room] have been eliminated. The [encounter] is complete. [clearance]", "[encounter] - All Clear", sender_override = issuer, has_important_message = TRUE)
 		if(GLOB.solo_expeditions.active == src)
 			GLOB.solo_expeditions.status = "[encounter] complete in [destination_room]. All [hostiles] are dead. [clearance]"
@@ -537,7 +525,7 @@ GLOBAL_DATUM_INIT(solo_expeditions, /datum/solo_expedition_board, new)
 	var/turf/site = get_turf(beacon)
 	var/reward_theme = "General tier [difficulty] relics"
 	if(kind == "xenomorph")
-		reward_theme = "No rewards assigned"
+		reward_theme = "Science T4 mythical prototypes"
 	else if(kind == "siege")
 		reward_theme = "Captured Syndicate prototypes"
 	else if(kind == "necropolis")
@@ -1099,8 +1087,6 @@ GLOBAL_DATUM_INIT(solo_expeditions, /datum/solo_expedition_board, new)
 			return TRUE
 		if("abandon")
 			return board.abandon(params["id"])
-		if("finish")
-			return board.finish(params["id"])
 		if("claim")
 			return board.claim(params["id"], params["reward"], drop_location())
 	return FALSE
@@ -1124,3 +1110,5 @@ GLOBAL_DATUM_INIT(solo_expeditions, /datum/solo_expedition_board, new)
 	GLOB.solo_expeditions.status = "Central Command acknowledges receipt of the assigned flight recorder. Requisition clearance granted; select one authorized item."
 	to_chat(user, span_notice("Flight recorder submitted. Open the console to choose your reward."))
 	return ITEM_INTERACT_SUCCESS
+
+#include "expedition_science_rewards.dm"

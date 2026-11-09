@@ -5,11 +5,11 @@ imprinter. It is available from the starter **Material Processing** node. Build
 it using the normal computer frame construction process. For admin testing,
 spawn `/obj/machinery/computer/expedition`.
 
-The console has five tabs: **T1 Expedition**, **T2 Expedition**, **T3 Expedition**,
-**Syndicate Signal**, and **Lavaland Anomalies**. Each expedition tier has one
+The console has six tabs: **T1 Expedition**, **T2 Expedition**, **T3 Expedition**,
+**Syndicate Signal**, **Lavaland Anomalies**, and **Science**. Each expedition tier has one
 randomized survey, salvage, or hunt offer. Syndicate Signal contains the tier-four
 Syndicate Breach Raid; Lavaland Anomalies contains the tier-four Necropolis Breach.
-All five offers refresh together after a reward is claimed or an assignment is
+All six offers refresh together after a reward is claimed or an assignment is
 withdrawn. Browsing a tab does not reroll its mission or rewards. While an
 assignment is active, other tabs remain readable and a **View Active Assignment**
 button returns to its progress and reward controls. Only one assignment can be
@@ -17,7 +17,7 @@ active at a time.
 Central Command's Special Assignments Office issues every mission. Each brief
 explains the assignment and provides field orders, tracking details, and an
 authorized requisition reserve. Read the orders and prepare before accepting;
-station-defense deployments begin immediately, with a 45-second warning.
+station-defense deployments begin on acceptance. The first Syndicate and Necropolis waves have a 45-second warning; the Science queen appears immediately.
 Titles, difficulty, field-work duration, encounter composition,
 and reward tiers vary. All consoles share one active expedition and progress
 for the round, including across console reconstruction.
@@ -35,7 +35,7 @@ For wilderness assignments:
    that must be used on a console. Hunts require killing the specific tagged
    fauna before verifying the beacon. Native fauna do not count.
 4. Return to a powered console and choose **one** of the three advertised rare
-   rewards. Rewards appear beside the console and all five offers are refreshed.
+   rewards. Rewards appear beside the console and all six offers are refreshed.
 
 Each of the four tiers has a separate pool of six artifacts. Every offer draws three distinct
 choices from its pool, without replacement. Those choices are locked when the
@@ -170,6 +170,20 @@ test of GPS discovery, fauna, field work interruption, and return/reward flow.
 
 ## Science: Xenomorph Containment
 
-The **Science** tab offers a rewardless station containment mission. Acceptance opens a burrow in an eligible room and immediately releases one hostile AI xenomorph queen. Three reinforcement waves follow at 30-second intervals, each containing 2–4 randomly selected hunters, bruisers, or sentinels. Reinforcement waves never include queens. Blocked exits use the breach raid's bounded retry policy and may delay deployment.
+The **Science** tab offers a Tier 4 station containment mission. Acceptance opens a burrow in an eligible room and immediately releases one hostile AI xenomorph queen. Three reinforcement waves follow at 30-second intervals, each containing 2–4 randomly selected hunters, bruisers, or sentinels. Reinforcement waves never include queens. Blocked exits use the breach raid's bounded retry policy and may delay deployment.
 
-After the first reinforcement wave, interact with the burrow for 12 uninterrupted seconds to seal it, or destroy it to stop further waves. Destroying it before that wave fails the assignment. Eliminate the queen and every released xenomorph to complete containment. Mission xenomorphs cannot lay eggs or plant weeds, keeping the encounter finite. Use **Close Assignment** to record completion and refresh the board. This mission provides no rewards.
+After the first reinforcement wave, interact with the burrow for 12 uninterrupted seconds to seal it, or destroy it to stop further waves. Destroying it before that wave fails the assignment. Eliminate the queen and every released xenomorph to complete containment. Mission xenomorphs cannot lay eggs or plant weeds, keeping the encounter finite. Return to a powered Expedition Mission Console to claim one of the three locked choices from the six-item **Science T4 mythical reserve**. Claiming refreshes the board. These prototypes never appear in the wilderness, Syndicate, or Necropolis reward pools.
+
+
+### Science T4 mythical reserve
+
+| Prototype | Use and limits |
+| --- | --- |
+| **Royal Neurotoxin Synthesizer** | Fire the rechargeable dart launcher normally. One dart regenerates every eight seconds. It deals 70 stamina damage and puts susceptible organic creatures to sleep for four seconds, with no tissue damage. A fully blocked shot does not sedate. |
+| **Xenobiological Sequencer** | Use on a living creature or corpse and hold still for three seconds. Reports health, temperature, and basic-mob melee force. Uploads 500 generic station research points the first time each creature type is scanned per round, shared across all sequencers. |
+| **Regenerative Symbiote** | Use the provided injector on yourself or another human. The implant passively repairs up to 1.5 brute and 1.5 burn damage per second while well fed, spending three nutrition per healing second. It pauses at the hungry threshold and does not revive or replace limbs. |
+| **Phase Displacement Belt** | Wear in the belt slot and press **Phase Displacement**. Pass through obstacles for four seconds, then stabilize for 2.5 seconds. Thirty-second cooldown. Reentry uses a clear tile along your path or the departure tile. Normal phase restrictions apply. |
+| **Infinite Horizon Backpack** | A bluespace bag with 1,000 slots and 10,000 combined weight, accepting gigantic items. **Alt-click** to search the full contents and retrieve a selected item. The normal grid shows the first five rows. Normal bag-of-holding nesting behavior applies. |
+| **Hyperenergized Slime Core** | Activate in hand to absorb the core. **Slime Metamorphosis** switches between a playable slime and your original body with no charges and a one-second cooldown. The original body and equipment are retained; damage carries between forms, and death in slime form is fatal. The form cannot reproduce or produce extract cores. |
+
+Each item has its own static 32×32 sprite in `icons/obj/mining_zones/science_mythical.dmi` and an examine description covering its controls and limits. Equipped belt and backpack appearances use the normal equipment sprites. The item icons were created with the built-in image generation tool: a resin-trimmed white-purple dart pistol, cyan DNA scanner, silver symbiote injector, violet phase buckle, blue-portal backpack, and lightning-filled aqua-purple slime core, as separate transparent SS13 pixel-art icons.
