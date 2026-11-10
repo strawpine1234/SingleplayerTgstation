@@ -108,7 +108,7 @@
 	var/list/expected_yields = list(
 		/datum/material/iron = 2,
 		/datum/material/gold = 3,
-		/datum/material/alloy/plasteel = 4,
+		/datum/material/plasma = 4,
 		/datum/material/diamond = 5,
 		/datum/material/mythril = 6,
 	)
