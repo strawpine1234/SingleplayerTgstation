@@ -1,51 +1,61 @@
 # Blacksmith
 
-Choose **Blacksmith** in the Cargo department. The job starts at a Cargo spawn
-point with a **Blacksmith Workshop Kit** in its backpack. Cargo can also order
-the kit under Miscellaneous Supplies.
+Choose **Blacksmith** under Cargo. The **Blacksmith Workshop Kit** in your
+backpack contains four placeable frames, tongs, a hammer, bellows, iron, and
+fuel. Cargo also sells the kit under Miscellaneous Supplies.
 
-1. Take the three folded frames out of the kit and use them on separate clear
-   floor tiles. Place the forge, anvil, and quench basin close together.
-2. Use iron sheets or titanium sheets on the forge to load metal. Load wood or
-   coal for heat. One wood gives one heat charge and one coal gives three.
-3. Use empty smithing tongs on the forge to choose a pattern and material. A cast
-   costs the listed metal and one heat charge. The hot blank goes into the tongs.
-4. Use the loaded tongs on the anvil. Strike with the smithing hammer, waiting
-   a second between hits. Examine the anvil or tongs to see the progress. If the
-   blank cools after 45 seconds, pick it up with tongs and reheat it at the forge
-   for one heat charge.
-5. When the anvil says the piece is ready, pick it up with tongs and use them on
-   the quench basin. A quench uses 10 units of water and sets the finished item
-   down beside the basin. Refill the basin from an open container as needed.
+You can make each frame separately in **Crafting → Structures**, and the three
+tools in **Crafting → Tools**. Use the frames on clear solid ground to arrange
+the workshop. Right-click a forge, anvil, or basin with an empty hand to
+unsecure it for moving. Use a wrench to pack an empty station. Move a fueled,
+hot, or upgraded forge by unsecuring it so it retains its state.
 
-| Pattern | Standard iron sheets | Standard strikes |
-| --- | --- | --- |
-| Katana | 5 | 6 |
-| Claymore | 6 | 7 |
-| Broadsword | 5 | 6 |
-| Dagger | 2 | 3 |
-| Shortsword | 3 | 4 |
-| Shield | 5 | 5 |
-| Chestplate | 6 | 7 |
-| Helmet | 4 | 5 |
-| Warhammer | 6 | 7 |
-| Seed sieve | 2 | 3 |
+| Station frame | Construction materials |
+| --- | --- |
+| Forge | 10 iron sheets |
+| Anvil | 10 iron sheets |
+| Water basin | 5 wood planks |
+| Workbench | 5 wood planks and 2 iron sheets |
 
-For **Masterwork Titanium**, pay the listed sheet count plus two in titanium
-instead of iron and add three strikes. Masterwork blades and hammers hit harder,
-shields block more often, and armor provides more melee protection.
+1. Add wood or coal to the forge. Wood reaches 50 heat on its own. Stoke it
+   with bellows to get past the working threshold of 51. Coal can reach 100.
+   The forge can smelt compatible ore into sheets.
+2. Pick up one iron rod or supported metal sheet with the tongs. Use the
+   loaded tongs on the hot forge and choose a part. The metal used for the
+   part carries through to the finished item.
+3. Place the hot blank on the anvil with tongs. Use the hammer once to begin
+   repeated blows. Moving away or putting the hammer down stops the work.
+   Plate and chain take 10 blows, and weapon heads take 30. Smithing skill
+   speeds the work. Reheat cold blanks by using loaded tongs on the forge.
+4. Retrieve the shaped blank with tongs and use it on the basin. A shaped
+   blank becomes a quenched part. A premature quench cools the unfinished blank.
+5. Load the quenched parts and any required wood into the workbench. Use
+   the hammer to assemble the selected pattern, then click with an empty hand
+   to collect the result. Right-click the bench to unload its contents.
 
-Use a finished **seed sieve** on harvested produce on the ground or in your
-other hand. It consumes the produce and copies its seed traits into two packets.
-A masterwork sieve produces three. Existing seed packets cannot be sifted.
+| Finished item | Workbench parts |
+| --- | --- |
+| Katana, claymore, broadsword, dagger, or shortsword | The matching blade and 2 wood planks |
+| Warhammer | Warhammer head and 2 wood planks |
+| Shield | 5 plates |
+| Chestplate | 6 plates |
+| Helmet | 4 plates |
+| Seed sieve | 1 plate and 2 chains |
 
-For **reagent quenching**, fill the basin with at least 10 units of water and 20
-units of one other reagent. Quenching transfers 20 units into the finished gear.
-An unblocked melee strike on a carbon target delivers up to one unit from an
-infused weapon or shield. An infused chestplate or helmet doses its wearer half
-a unit at a time while equipped. Examine the item to see its remaining supply.
-Use plain water for sieves. Alt-click the basin to drain it before changing the
-bath.
+Use the seed sieve on harvested produce to get two packets carrying its
+seed traits.
 
-The heat, hammer, and reagent workflow is inspired by [Nova Sector's smithing guide](https://wiki.novasector13.com/wiki/Guide_to_Smithing_and_Reagent_Forging#Reagent_Clothing).
-The material and work tradeoff for masterworks is inspired by [Paradise Station's smithing guide](https://www.paradisestation.org/wiki/Guide_to_Smithing#Quality).
+To imbue finished gear, fit the forge with three regenerative cores or use
+a legendary smith's expertise. Load the gear with 100 units of each eligible
+reagent, then use it on the hot reagent forge. It can bind up to two reagents.
+Infused weapons deliver a unit of each reagent on an unblocked hit and take
+wear. Infused chestplates and helmets deliver half-unit doses while worn.
+The infusion regenerates once sealed.
+
+The smithing workflow, skill, sprites, and sounds come from Nova Sector's
+Reagent Forging module. The station interactions use this fork's tool APIs
+and the bench recipes cover the requested local weapons and armor. [Nova Sector guide](https://wiki.novasector13.com/wiki/Guide_to_Smithing_and_Reagent_Forging) · [Pinned upstream module](https://github.com/NovaSector/NovaSector/tree/5ce2bd2215c0355ba9c54ff56d52ae20c90d36da/modular_nova/modules/reagent_forging)
+
+Upstream credits the module to Jake Park. The adapted code is AGPL-3.0, and
+the imported sprites and sounds retain their upstream CC BY-SA 3.0 license.
+See Nova Sector's licensing notes. [Upstream README](https://github.com/NovaSector/NovaSector/blob/5ce2bd2215c0355ba9c54ff56d52ae20c90d36da/README.md#license)
