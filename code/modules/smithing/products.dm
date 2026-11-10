@@ -89,6 +89,56 @@ GLOBAL_LIST_INIT(smithing_assembly_patterns, list(
 	"Seed Sieve" = list("parts" = list("Plate" = 1, "Chain" = 2), "strikes" = 10, "output" = /obj/item/seed_sieve),
 ))
 
+/// Modest handling and protection perks for pure stock, scaled by share in a mixed piece.
+GLOBAL_LIST_INIT(smithing_material_perks, list(
+	/datum/material/iron = list("durability" = 0.05),
+	/datum/material/glass = list("edge" = 4),
+	/datum/material/silver = list("guard" = 3),
+	/datum/material/gold = list("guard" = 4, "speed" = 0.03),
+	/datum/material/diamond = list("edge" = 8, "durability" = 0.1),
+	/datum/material/uranium = list("throw" = 3, "durability" = 0.1),
+	/datum/material/plasma = list("edge" = 5, "fire" = 5),
+	/datum/material/bluespace = list("speed" = 0.1),
+	/datum/material/bananium = list("throw" = 4, "speed" = 0.05),
+	/datum/material/titanium = list("speed" = 0.06, "durability" = 0.1),
+	/datum/material/runite = list("guard" = 4, "edge" = 3),
+	/datum/material/plastic = list("speed" = 0.03, "fire" = 2),
+	/datum/material/wood = list("speed" = 0.04),
+	/datum/material/adamantine = list("durability" = 0.25),
+	/datum/material/mythril = list("speed" = 0.08, "guard" = 5),
+	/datum/material/hot_ice = list("fire" = 8, "speed" = 0.04),
+	/datum/material/metalhydrogen = list("edge" = 6, "speed" = 0.05),
+	/datum/material/sandstone = list("fire" = 4),
+	/datum/material/snow = list("fire" = 3, "speed" = 0.02),
+	/datum/material/runedmetal = list("guard" = 5, "fire" = 4),
+	/datum/material/bronze = list("throw" = 2, "guard" = 2),
+	/datum/material/paper = list("speed" = 0.05),
+	/datum/material/cardboard = list("guard" = 1),
+	/datum/material/bone = list("edge" = 3, "speed" = 0.02),
+	/datum/material/bamboo = list("speed" = 0.06),
+	/datum/material/zaukerite = list("edge" = 7, "fire" = 5),
+	/datum/material/hauntium = list("guard" = 3, "fire" = 3),
+	/datum/material/telecrystal = list("speed" = 0.07, "throw" = 3),
+	/datum/material/alloy/plasteel = list("durability" = 0.2, "guard" = 3),
+	/datum/material/alloy/plastitanium = list("durability" = 0.15, "fire" = 6),
+	/datum/material/alloy/plasmaglass = list("edge" = 4, "fire" = 5),
+	/datum/material/alloy/titaniumglass = list("edge" = 4, "speed" = 0.04),
+	/datum/material/alloy/plastitaniumglass = list("edge" = 5, "fire" = 6),
+	/datum/material/alloy/alien = list("durability" = 0.15, "edge" = 4, "speed" = 0.06),
+	// Some sheets have no material datum or catalogue price. Set their rarity and perks here.
+	/obj/item/stack/sheet/cloth = list("speed" = 0.03),
+	/obj/item/stack/sheet/leather = list("guard" = 2),
+	/obj/item/stack/sheet/durathread = list("damage" = 1, "durability" = 0.12),
+	/obj/item/stack/sheet/mineral/coal = list("throw" = 1),
+	/obj/item/stack/sheet/sinew = list("damage" = 2, "speed" = 0.05),
+	/obj/item/stack/sheet/sinew/icewing = list("damage" = 3, "speed" = 0.07),
+	/obj/item/stack/sheet/sinew/magmawing = list("damage" = 3, "fire" = 5),
+	/obj/item/stack/sheet/animalhide/goliath_hide = list("damage" = 3, "guard" = 3, "durability" = 0.1),
+	/obj/item/stack/sheet/animalhide/ashdrake = list("damage" = 8, "fire" = 8, "durability" = 0.15),
+	/obj/item/stack/sheet/lessergem = list("damage" = 6, "edge" = 5, "guard" = 2),
+	/obj/item/stack/sheet/greatergem = list("damage" = 9, "edge" = 7, "guard" = 3),
+))
+
 /obj/structure/smithing_station/bench
 	name = "smithing workbench"
 	desc = "Click with an empty hand to browse recipes or collect a finished item. Load quenched parts and wood, then use a forging hammer to assemble a pattern. Right-click to unload parts."
@@ -251,10 +301,13 @@ GLOBAL_LIST_INIT(smithing_assembly_patterns, list(
 	var/list/plan = get_plan(recipe)
 	if(!plan)
 		return FALSE
-	var/list/metals = list()
+	var/list/materials = list()
+	var/list/untracked_stock = list()
 	for(var/obj/item/smithing_blank/part in plan)
-		for(var/material in part.custom_materials)
-			metals[material] += part.custom_materials[material]
+		for(var/datum/material/material as anything in part.custom_materials)
+			materials[material] += part.custom_materials[material]
+		if(part.untracked_stock)
+			untracked_stock[part.untracked_stock]++
 	for(var/obj/item/ingredient as anything in plan)
 		if(istype(ingredient, /obj/item/stack))
 			var/obj/item/stack/stack = ingredient
@@ -263,9 +316,9 @@ GLOBAL_LIST_INIT(smithing_assembly_patterns, list(
 			qdel(ingredient)
 	var/output_type = recipe["output"]
 	assembled_item = new output_type(src)
-	assembled_item.material_flags |= MATERIAL_COLOR | MATERIAL_ADD_PREFIX | MATERIAL_EFFECTS
-	assembled_item.set_custom_materials(metals)
+	apply_smithing_materials(assembled_item, materials, untracked_stock)
 	if(!istype(assembled_item, /obj/item/seed_sieve))
+		apply_smithing_bonuses(assembled_item, materials, untracked_stock)
 		var/armor_slot = NONE
 		if(istype(assembled_item, /obj/item/clothing/head))
 			armor_slot = ITEM_SLOT_HEAD
@@ -275,6 +328,88 @@ GLOBAL_LIST_INIT(smithing_assembly_patterns, list(
 	selected_pattern = null
 	assembly_strikes = 0
 	return TRUE
+
+/// Keep composition and color for all stock. New materials get controlled smithing perks
+/// instead of unrelated native effects such as curses or gas release.
+/obj/structure/smithing_station/bench/proc/apply_smithing_materials(obj/item/gear, list/materials, list/untracked_stock)
+	var/native_effects = !length(untracked_stock)
+	for(var/datum/material/material as anything in materials)
+		if(!is_type_in_typecache(material, GLOB.smithing_native_effects))
+			native_effects = FALSE
+			break
+	if(native_effects)
+		gear.material_flags |= MATERIAL_COLOR | MATERIAL_ADD_PREFIX | MATERIAL_EFFECTS
+		gear.set_custom_materials(materials)
+		return
+
+	gear.material_flags &= ~MATERIAL_EFFECTS
+	gear.set_custom_materials(materials)
+	var/list/colors = list()
+	for(var/datum/material/material as anything in materials)
+		gear.gather_material_color(material, colors, materials[material], multicolor = length(materials) > 1)
+	gear.mix_material_colors(colors)
+	var/list/material_names = list()
+	for(var/obj/item/stack/stock_type as anything in untracked_stock)
+		material_names |= initial(stock_type.name)
+	for(var/datum/material/material as anything in materials)
+		material_names |= material.name
+	gear.name = "[material_names.Join("-")] [gear.name]"
+
+/// Weight bonuses by the material in the actual blanks. Handle wood never enters this calculation.
+/obj/structure/smithing_station/bench/proc/apply_smithing_bonuses(obj/item/gear, list/materials, list/untracked_stock)
+	var/list/composition = materials.Copy()
+	for(var/stock_type in untracked_stock)
+		composition[stock_type] = untracked_stock[stock_type] * SHEET_MATERIAL_AMOUNT
+	var/total_amount = 0
+	var/list/bonuses = list()
+	for(var/stock in composition)
+		var/amount = composition[stock]
+		total_amount += amount
+		var/datum/material/material = stock
+		var/perk_type = istype(material) ? material.type : stock
+		var/list/perks = GLOB.smithing_material_perks[perk_type]
+		if(istype(material))
+			// Use the catalogue value per sheet as the rarity proxy, capped at +9.
+			var/sheet_value = material.value_per_unit * SHEET_MATERIAL_AMOUNT
+			bonuses["damage"] += min(9, sqrt(max(0, sheet_value - 25)) / 3.5) * amount
+		if(!perks)
+			bonuses["durability"] += 0.05 * amount
+		for(var/perk in perks)
+			bonuses[perk] += perks[perk] * amount
+	if(!total_amount)
+		return
+	for(var/perk in bonuses)
+		bonuses[perk] /= total_amount
+
+	var/edge = round(bonuses["edge"] + 0.5)
+	var/guard = round(bonuses["guard"] + 0.5)
+	var/throw_bonus = round(bonuses["throw"] + 0.5)
+	var/fire_bonus = round(bonuses["fire"] + 0.5)
+	if(gear.uses_integrity && bonuses["durability"])
+		gear.modify_max_integrity(round(gear.max_integrity * (1 + bonuses["durability"])))
+	var/is_armor = isclothing(gear)
+	var/is_shield = istype(gear, /obj/item/shield)
+	if(!is_armor)
+		gear.force += round(bonuses["damage"] + 0.5)
+	if(is_armor || is_shield)
+		var/speed_bonus = bonuses["speed"] || 0
+		var/datum/armor/armor = gear.get_armor()
+		gear.set_armor(armor.generate_new_with_specific(list(
+			"melee" = min(100, armor.get_rating("melee") + edge + guard),
+			"bullet" = min(100, armor.get_rating("bullet") + throw_bonus),
+			"laser" = min(100, armor.get_rating("laser") + round(speed_bonus * 50 + 0.5)),
+			"fire" = min(100, armor.get_rating("fire") + fire_bonus),
+		)))
+		if(is_shield)
+			gear.block_chance += guard
+		return
+
+	gear.armour_penetration += edge
+	gear.block_chance += guard
+	gear.throwforce += throw_bonus
+	gear.attack_speed *= 1 - (bonuses["speed"] || 0)
+	if(fire_bonus)
+		gear.set_armor_rating("fire", min(100, gear.get_armor_rating("fire") + fire_bonus))
 
 // Adapted from Nova's reagent weapon and clothing components. The imbued
 // reagents regenerate. The loading reservoir is discarded after imbuing.

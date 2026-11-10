@@ -117,3 +117,70 @@
 		TEST_ASSERT_EQUAL(seed.potency, 47, "The sieve must copy the crop's seed traits.")
 		TEST_ASSERT_EQUAL(sieve.interact_with_atom(seed, smith), NONE, "The sieve must not duplicate existing seed packets.")
 	TEST_ASSERT_EQUAL(seeds_found, 2, "The standard sieve must produce two seed packets.")
+
+/// Exercise actual sheet pickup, casting, and the finished weapon stats for different materials.
+/datum/unit_test/blacksmith_materials/Run()
+	var/mob/living/carbon/human/smith = allocate(/mob/living/carbon/human/consistent)
+	var/obj/item/smithing_tongs/tongs = allocate(/obj/item/smithing_tongs)
+	var/obj/structure/smithing_station/forge/forge = allocate(/obj/structure/smithing_station/forge)
+	var/obj/structure/smithing_station/bench/bench = allocate(/obj/structure/smithing_station/bench)
+	smith.put_in_active_hand(tongs)
+	forge.temperature = 80
+
+	var/list/sheet_types = list(
+		/obj/item/stack/sheet/iron,
+		/obj/item/stack/sheet/rglass,
+		/obj/item/stack/sheet/cloth,
+		/obj/item/stack/sheet/bluespace_crystal,
+		/obj/item/stack/sheet/mineral/diamond,
+		/obj/item/stack/sheet/mineral/mythril,
+		/obj/item/stack/sheet/animalhide/ashdrake,
+	)
+	var/list/weapons = list()
+	for(var/sheet_type in sheet_types)
+		var/obj/item/stack/sheet/stock = allocate(sheet_type, run_loc_floor_bottom_left, 2, FALSE)
+		TEST_ASSERT_EQUAL(tongs.interact_with_atom(stock, smith), ITEM_INTERACT_SUCCESS, "Tongs must accept [sheet_type].")
+		TEST_ASSERT_EQUAL(stock.get_amount(), 1, "Tongs must take exactly one sheet.")
+		var/obj/item/stack/sheet/piece = locate() in tongs.contents
+		TEST_ASSERT(forge.cast_part(tongs, piece, "Katana blade"), "The forge must cast [sheet_type].")
+		var/obj/item/smithing_blank/part = locate() in tongs.contents
+		TEST_ASSERT_NOTNULL(part, "Casting must produce a blank.")
+		part.quenched = TRUE
+		part.forceMove(bench)
+		new /obj/item/stack/sheet/mineral/wood(bench, 2)
+		TEST_ASSERT(bench.finish_pattern("Katana"), "A [sheet_type] blade must assemble.")
+		weapons[sheet_type] = bench.assembled_item
+		bench.assembled_item.forceMove(run_loc_floor_bottom_left)
+		bench.assembled_item = null
+
+	var/obj/item/katana/forged/iron = weapons[/obj/item/stack/sheet/iron]
+	var/obj/item/katana/forged/glass = weapons[/obj/item/stack/sheet/rglass]
+	var/obj/item/katana/forged/cloth = weapons[/obj/item/stack/sheet/cloth]
+	var/obj/item/katana/forged/bluespace = weapons[/obj/item/stack/sheet/bluespace_crystal]
+	var/obj/item/katana/forged/diamond = weapons[/obj/item/stack/sheet/mineral/diamond]
+	var/obj/item/katana/forged/mythril = weapons[/obj/item/stack/sheet/mineral/mythril]
+	var/obj/item/katana/forged/drake = weapons[/obj/item/stack/sheet/animalhide/ashdrake]
+	TEST_ASSERT_EQUAL(iron.force, initial(iron.force), "Common iron must keep the baseline melee damage.")
+	TEST_ASSERT_EQUAL(cloth.force, iron.force, "Sheets without registered materials must have common-tier damage.")
+	TEST_ASSERT(findtext(cloth.name, "cloth"), "Untracked materials must retain their names.")
+	TEST_ASSERT_EQUAL(length(glass.custom_materials), 2, "Reinforced glass must retain both constituent materials.")
+	TEST_ASSERT(glass.armour_penetration > iron.armour_penetration && glass.armour_penetration < diamond.armour_penetration, "Mixed stock must receive proportionate bonuses.")
+	TEST_ASSERT(bluespace.attack_speed < iron.attack_speed, "Bluespace weapons must swing faster.")
+	TEST_ASSERT(diamond.force > bluespace.force && bluespace.force > iron.force, "Rare stock must increase damage in value order.")
+	TEST_ASSERT_EQUAL(mythril.force, iron.force + 9, "The rarest stock must reach the damage cap.")
+	TEST_ASSERT_EQUAL(drake.force, iron.force + 8, "Rare sheets without material datums must still get a rarity bonus.")
+	TEST_ASSERT(!mythril.GetComponent(/datum/component/fantasy), "Mythril smithing must apply controlled bonuses.")
+
+	for(var/index in 1 to 4)
+		var/material = index <= 2 ? /datum/material/diamond : /datum/material/iron
+		var/list/materials = list()
+		materials[material] = SHEET_MATERIAL_AMOUNT
+		var/obj/item/smithing_blank/plate = new(bench, "Plate", materials)
+		plate.quenched = TRUE
+	TEST_ASSERT(bench.finish_pattern("Helmet"), "The bench must accept plates of mixed materials.")
+	var/obj/item/clothing/head/helmet/knight/forged/helmet = bench.assembled_item
+	var/datum/armor/base_armor = get_armor_by_type(initial(helmet.armor_type))
+	TEST_ASSERT_EQUAL(helmet.get_armor_rating("melee"), base_armor.get_rating("melee") + 4, "Two diamond plates out of four must grant half the full melee protection bonus.")
+	TEST_ASSERT_EQUAL(helmet.get_armor_rating("wound"), base_armor.get_rating("wound"), "Forging bonuses must preserve other armor ratings.")
+	for(var/sheet_type in weapons)
+		qdel(weapons[sheet_type])

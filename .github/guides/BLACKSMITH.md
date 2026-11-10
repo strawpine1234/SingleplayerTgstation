@@ -20,9 +20,9 @@ hot, or upgraded forge by unsecuring it so it retains its state.
 1. Add wood or coal to the forge. Wood reaches 50 heat on its own. Stoke it
    with bellows to get past the working threshold of 51. Coal can reach 100.
    The forge can smelt compatible ore into sheets.
-2. Pick up one iron rod or supported metal sheet with the tongs. Use the
-   loaded tongs on the hot forge and choose a part. The metal used for the
-   part carries through to the finished item.
+2. Use the tongs on any material sheet stack or rods to pick up one unit.
+   Use the loaded tongs on the hot forge and choose a part. The stock used
+   for the part carries through to the finished item.
 3. Place the hot blank on the anvil with tongs. Use the hammer once to begin
    repeated blows. Moving away or putting the hammer down stops the work.
    Plate and chain take 10 blows, and weapon heads take 30. Smithing skill
@@ -42,6 +42,14 @@ hot, or upgraded forge by unsecuring it so it retains its state.
 | Chestplate | 6 plates |
 | Helmet | 4 plates |
 | Seed sieve | 1 plate and 2 chains |
+
+More valuable stock adds up to 9 melee damage to weapons and shield bashes.
+Diamond cuts through armor, bluespace swings faster, silver improves parries,
+and plasteel makes gear tougher. On armor, materials improve protection or
+durability. Mixed parts blend their bonuses by material amount. Wood used for
+a handle does not affect the blade's bonuses. Cloth swings a little faster
+and deals common-tier damage. Rare sheets such as ash drake hide get their
+own damage and protection bonuses.
 
 Use the seed sieve on harvested produce to get two packets carrying its
 seed traits.
