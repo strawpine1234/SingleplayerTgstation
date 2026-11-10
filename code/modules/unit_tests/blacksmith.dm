@@ -184,3 +184,42 @@
 	TEST_ASSERT_EQUAL(helmet.get_armor_rating("wound"), base_armor.get_rating("wound"), "Forging bonuses must preserve other armor ratings.")
 	for(var/sheet_type in weapons)
 		qdel(weapons[sheet_type])
+
+/// Load a recipe by clicking with held ingredients, then assemble it using the hammer interaction.
+/datum/unit_test/blacksmith_bench_loading/Run()
+	var/mob/living/carbon/human/smith = allocate(/mob/living/carbon/human/consistent)
+	var/obj/structure/smithing_station/bench/bench = allocate(/obj/structure/smithing_station/bench)
+	var/obj/item/smithing_blank/blade = allocate(/obj/item/smithing_blank, run_loc_floor_bottom_left, "Katana blade", list(/datum/material/iron = SHEET_MATERIAL_AMOUNT))
+	var/obj/item/stack/sheet/mineral/wood/wood = allocate(/obj/item/stack/sheet/mineral/wood, run_loc_floor_bottom_left, 2, FALSE)
+	var/obj/item/smithing_tongs/tongs = allocate(/obj/item/smithing_tongs)
+	var/obj/item/carpenter_hammer/smithing/hammer = allocate(/obj/item/carpenter_hammer/smithing)
+
+	blade.quenched = TRUE
+	smith.put_in_active_hand(blade)
+	TEST_ASSERT_EQUAL(bench.item_interaction(smith, blade), ITEM_INTERACT_SUCCESS, "The bench must accept a quenched blade by hand.")
+	TEST_ASSERT_EQUAL(blade.loc, bench, "A loaded blade must actually enter the workbench.")
+
+	bench.attack_hand_secondary(smith)
+	TEST_ASSERT_EQUAL(blade.loc, get_turf(bench), "Unloading must return the blade to the floor.")
+	smith.put_in_active_hand(tongs)
+	smith.put_in_inactive_hand(blade)
+	TEST_ASSERT_EQUAL(tongs.interact_with_atom(blade, smith), ITEM_INTERACT_SUCCESS, "Tongs must take a part from the other hand.")
+	TEST_ASSERT_EQUAL(blade.loc, tongs, "The blade must actually enter the tongs.")
+	TEST_ASSERT_EQUAL(bench.item_interaction(smith, tongs), ITEM_INTERACT_SUCCESS, "The bench must also accept a blade from tongs.")
+	TEST_ASSERT_EQUAL(blade.loc, bench, "Loading from tongs must move the blade into the bench.")
+
+	smith.dropItemToGround(tongs)
+	smith.put_in_active_hand(wood)
+	TEST_ASSERT_EQUAL(bench.item_interaction(smith, wood), ITEM_INTERACT_SUCCESS, "The bench must accept held planks.")
+	TEST_ASSERT_EQUAL(wood.loc, bench, "Loaded planks must actually enter the workbench.")
+	var/list/data = bench.ui_data(smith)
+	var/list/loaded = data["loaded"]
+	TEST_ASSERT_EQUAL(loaded["Katana blade"], 1, "The UI must count the inserted blade.")
+	TEST_ASSERT_EQUAL(loaded["Wood planks"], 2, "The UI must count the inserted planks.")
+
+	smith.put_in_active_hand(hammer)
+	hammer.toolspeed = 0.1
+	TEST_ASSERT_EQUAL(bench.item_interaction(smith, hammer), ITEM_INTERACT_SUCCESS, "The forging hammer must start assembly.")
+	var/deadline = world.time + 10 SECONDS
+	UNTIL(bench.assembled_item || world.time >= deadline)
+	TEST_ASSERT(istype(bench.assembled_item, /obj/item/katana/forged), "Hammering loaded parts must finish the katana.")

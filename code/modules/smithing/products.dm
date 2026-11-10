@@ -163,6 +163,7 @@ GLOBAL_LIST_INIT(smithing_material_perks, list(
 		var/obj/item/result = assembled_item
 		assembled_item = null
 		user.put_in_hands(result)
+		SStgui.update_uis(src)
 	else
 		ui_interact(user)
 	return TRUE
@@ -211,6 +212,7 @@ GLOBAL_LIST_INIT(smithing_material_perks, list(
 	assembled_item = null
 	selected_pattern = null
 	assembly_strikes = 0
+	SStgui.update_uis(src)
 	return SECONDARY_ATTACK_CANCEL_ATTACK_CHAIN
 
 /obj/structure/smithing_station/bench/item_interaction(mob/living/user, obj/item/tool, list/modifiers)
@@ -220,16 +222,26 @@ GLOBAL_LIST_INIT(smithing_material_perks, list(
 	if(istype(tool, /obj/item/carpenter_hammer/smithing))
 		INVOKE_ASYNC(src, PROC_REF(assemble), user, tool)
 		return ITEM_INTERACT_SUCCESS
-	var/obj/item/smithing_blank/part = tool
+	var/obj/item/ingredient = tool
+	var/using_tongs = istype(tool, /obj/item/smithing_tongs)
+	if(using_tongs)
+		ingredient = locate(/obj/item/smithing_blank) in tool.contents
+		if(!ingredient)
+			user.balloon_alert(user, "hold a quenched part in the tongs!")
+			return ITEM_INTERACT_BLOCKING
+	var/obj/item/smithing_blank/part = ingredient
 	if(istype(part) && !part.quenched)
 		user.balloon_alert(user, "quench this part first!")
 		return ITEM_INTERACT_BLOCKING
-	if(istype(part) || istype(tool, /obj/item/stack/sheet/mineral/wood))
-		if(!user.temporarilyRemoveItemFromInventory(tool, newloc = src))
-			return ITEM_INTERACT_BLOCKING
-		user.balloon_alert(user, "part loaded")
-		return ITEM_INTERACT_SUCCESS
-	return ..()
+	if(!istype(part) && !istype(ingredient, /obj/item/stack/sheet/mineral/wood))
+		return ..()
+	if(using_tongs)
+		ingredient.forceMove(src)
+	else if(!user.transferItemToLoc(ingredient, src))
+		return ITEM_INTERACT_BLOCKING
+	user.balloon_alert(user, "part loaded")
+	SStgui.update_uis(src)
+	return ITEM_INTERACT_SUCCESS
 
 /// Resolve the exact objects and stack amounts a Nova assembly recipe needs.
 /obj/structure/smithing_station/bench/proc/get_plan(list/recipe)
@@ -280,6 +292,8 @@ GLOBAL_LIST_INIT(smithing_material_perks, list(
 	if(pattern != selected_pattern)
 		selected_pattern = pattern
 		assembly_strikes = 0
+	user.balloon_alert(user, "assembling [lowertext(pattern)]")
+	SStgui.update_uis(src)
 	var/list/recipe = GLOB.smithing_assembly_patterns[pattern]
 	var/skill_modifier = user.mind?.get_skill_modifier(/datum/skill/smithing, SKILL_SPEED_MODIFIER) || 1
 	while(assembly_strikes < recipe["strikes"])
@@ -292,6 +306,7 @@ GLOBAL_LIST_INIT(smithing_material_perks, list(
 		user.mind?.adjust_experience(/datum/skill/smithing, 30)
 		user.balloon_alert(user, "item crafted")
 	busy = FALSE
+	SStgui.update_uis(src)
 
 /// Recheck the loaded ingredients when assembly completes, then consume them once.
 /obj/structure/smithing_station/bench/proc/finish_pattern(pattern)
