@@ -1,8 +1,9 @@
 # Blacksmith
 
-Choose **Blacksmith** under Cargo. The **Blacksmith Workshop Kit** in your
-backpack contains four placeable frames, tongs, a hammer, bellows, iron, and
-fuel. Cargo also sells the kit under Miscellaneous Supplies.
+Choose **Blacksmith** under Cargo to start with a **Smithing Kit** in your
+backpack. Cargo sells the same kit under **Miscellaneous Supplies** for a base
+price of 400 credits. It contains 32 iron sheets, 1 iron rod, and 18 wood planks,
+enough to build the workshop and tools, fuel the forge, and make a katana.
 
 You can make each frame separately in **Crafting → Structures**, and the three
 tools in **Crafting → Tools**. Use the frames on clear solid ground to arrange
