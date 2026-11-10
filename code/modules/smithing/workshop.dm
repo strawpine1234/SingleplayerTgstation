@@ -208,7 +208,7 @@ GLOBAL_LIST_INIT(smithing_native_effects, typecacheof(list(
 			return ITEM_INTERACT_BLOCKING
 		piece.forceMove(src)
 	else if(item.loc == user)
-		if(!user.temporarilyRemoveItemFromInventory(item, newloc = src))
+		if(!user.transferItemToLoc(item, src))
 			return ITEM_INTERACT_BLOCKING
 	else
 		item.forceMove(src)
