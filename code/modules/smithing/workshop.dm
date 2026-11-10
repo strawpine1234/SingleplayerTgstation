@@ -14,7 +14,8 @@ GLOBAL_LIST_INIT(smithing_parts, list(
 	"Warhammer head" = list("sprite" = "hammerhead", "strikes" = 30),
 ))
 
-GLOBAL_LIST_INIT(smithing_metals, typecacheof(list(
+/// Legacy forging metals retain their existing native material effects on finished gear.
+GLOBAL_LIST_INIT(smithing_native_effects, typecacheof(list(
 	/datum/material/iron,
 	/datum/material/silver,
 	/datum/material/gold,
@@ -156,7 +157,7 @@ GLOBAL_LIST_INIT(smithing_metals, typecacheof(list(
 
 /obj/item/smithing_tongs
 	name = "forging tongs"
-	desc = "Pick up one iron rod or metal sheet with these tongs. Use them at a hot forge to shape a blank, or to carry a blank between stations."
+	desc = "Pick up one rod or a unit from any material sheet stack with these tongs. Use them at a hot forge to shape a blank, or to carry a blank between stations."
 	icon = 'icons/obj/smithing/forge_items.dmi'
 	icon_state = "tong_empty"
 	inhand_icon_state = "hemostat"
@@ -199,16 +200,10 @@ GLOBAL_LIST_INIT(smithing_metals, typecacheof(list(
 	if(!isturf(item.loc) && item.loc != user)
 		return ITEM_INTERACT_BLOCKING
 	if(istype(item, /obj/item/stack))
-		var/obj/item/stack/metal = item
-		if(!istype(metal, /obj/item/stack/rods) && !istype(metal, /obj/item/stack/sheet))
+		var/obj/item/stack/stock = item
+		if(!istype(stock, /obj/item/stack/rods) && !istype(stock, /obj/item/stack/sheet))
 			return NONE
-		if(!length(metal.mats_per_unit))
-			return NONE
-		for(var/material in metal.mats_per_unit)
-			var/datum/material/material_datum = SSmaterials.get_material(material)
-			if(!is_type_in_typecache(material_datum, GLOB.smithing_metals))
-				return NONE
-		var/obj/item/stack/piece = metal.split_stack(1)
+		var/obj/item/stack/piece = stock.split_stack(1)
 		if(!piece)
 			return ITEM_INTERACT_BLOCKING
 		piece.forceMove(src)
@@ -226,20 +221,22 @@ GLOBAL_LIST_INIT(smithing_metals, typecacheof(list(
 
 /obj/item/smithing_blank
 	name = "smithing blank"
-	desc = "A piece of metal being shaped on an anvil."
+	desc = "A piece of material shaped on an anvil."
 	icon = 'icons/obj/smithing/forge_items.dmi'
 	icon_state = "hot_plate"
 	w_class = WEIGHT_CLASS_SMALL
 	abstract_type = /obj/item/smithing_blank
 	material_flags = MATERIAL_COLOR | MATERIAL_ADD_PREFIX
 	var/part_kind
+	/// Source stack type for sheets such as cloth that have no registered material composition.
+	var/obj/item/stack/untracked_stock
 	var/hot_until = 0
 	var/strikes = 0
 	var/required_strikes = 0
 	var/strike_delay
 	var/quenched = FALSE
 
-/obj/item/smithing_blank/Initialize(mapload, pattern_name, list/metals)
+/obj/item/smithing_blank/Initialize(mapload, pattern_name, list/materials, untracked_stock)
 	. = ..()
 	var/list/pattern = GLOB.smithing_parts[pattern_name]
 	if(!pattern)
@@ -250,14 +247,18 @@ GLOBAL_LIST_INIT(smithing_metals, typecacheof(list(
 	required_strikes = pattern["strikes"]
 	strike_delay = required_strikes == 10 ? 0.5 SECONDS : 1 SECONDS
 	hot_until = world.time + 1 MINUTES
-	set_custom_materials(metals)
+	src.untracked_stock = untracked_stock
+	set_custom_materials(materials)
 
 /obj/item/smithing_blank/examine(mob/user)
 	. = ..()
+	var/material_name = untracked_stock ? initial(untracked_stock.name) : get_material_english_list(custom_materials)
+	if(material_name)
+		. += span_notice("Forged from [material_name].")
 	if(quenched)
 		. += span_notice("Ready to assemble on a smithing workbench.")
 	else
-		. += span_notice("[strikes]/[required_strikes] strikes. The metal is [world.time < hot_until ? "hot" : "cold"].")
+		. += span_notice("[strikes]/[required_strikes] strikes. The blank is [world.time < hot_until ? "hot" : "cold"].")
 
 /obj/item/smithing_blank/attack_hand(mob/living/user, list/modifiers)
 	if(!quenched && world.time < hot_until)
@@ -297,7 +298,7 @@ GLOBAL_LIST_INIT(smithing_metals, typecacheof(list(
 
 /obj/structure/smithing_station/forge
 	name = "smithing forge"
-	desc = "Fuel it with wood or coal. Wood needs bellows to reach working heat. Use metal in tongs to form a blank or loaded tongs to reheat one."
+	desc = "Fuel it with wood or coal. Wood needs bellows to reach working heat. Use a sheet or rod in tongs to form a blank or loaded tongs to reheat one."
 	icon_state = "forge_inactive"
 	frame_type = /obj/item/smithing_frame/forge
 	var/temperature = 0
@@ -425,7 +426,7 @@ GLOBAL_LIST_INIT(smithing_metals, typecacheof(list(
 	var/obj/item/smithing_blank/blank = locate() in tongs.contents
 	var/obj/item/stack/metal = locate() in tongs.contents
 	if(!blank && !metal)
-		user.balloon_alert(user, "load metal into the tongs!")
+		user.balloon_alert(user, "load a sheet or rod into the tongs!")
 		return
 	if(blank && (blank.quenched || world.time < blank.hot_until))
 		user.balloon_alert(user, "blank does not need heating!")
@@ -442,7 +443,9 @@ GLOBAL_LIST_INIT(smithing_metals, typecacheof(list(
 			blank.hot_until = world.time + 1 MINUTES
 			user.balloon_alert(user, "blank reheated")
 		else if(metal && !QDELETED(metal) && metal.loc == tongs)
-			cast_part(tongs, metal, pattern)
+			if(!cast_part(tongs, metal, pattern))
+				busy = FALSE
+				return
 			user.balloon_alert(user, "hot blank ready")
 		user.mind?.adjust_experience(/datum/skill/smithing, 5)
 	busy = FALSE
@@ -450,10 +453,11 @@ GLOBAL_LIST_INIT(smithing_metals, typecacheof(list(
 /obj/structure/smithing_station/forge/proc/cast_part(obj/item/smithing_tongs/tongs, obj/item/stack/metal, pattern)
 	if(temperature < SMITHING_MIN_HEAT || !GLOB.smithing_parts[pattern] || QDELETED(metal) || metal.loc != tongs)
 		return FALSE
-	var/list/metals = metal.mats_per_unit.Copy()
+	var/list/materials = metal.mats_per_unit?.Copy()
+	var/untracked_stock = length(materials) ? null : metal.merge_type
 	if(!metal.use(1))
 		return FALSE
-	new /obj/item/smithing_blank(tongs, pattern, metals)
+	new /obj/item/smithing_blank(tongs, pattern, materials, untracked_stock)
 	return TRUE
 
 /obj/structure/smithing_station/forge/proc/smelt_ore(mob/living/user, obj/item/stack/ore/ore)
