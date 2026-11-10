@@ -22,7 +22,8 @@ hot, or upgraded forge by unsecuring it so it retains its state.
    The forge can smelt compatible ore into sheets.
 2. Use the tongs on any material sheet stack or rods to pick up one unit.
    Use the loaded tongs on the hot forge and choose a part. The stock used
-   for the part carries through to the finished item.
+   for the part carries through to the finished item. Parts and finished
+   gear take on the stock's color. Mixed parts blend their colors.
 3. Place the hot blank on the anvil with tongs. Use the hammer once to begin
    repeated blows. Moving away or putting the hammer down stops the work.
    Plate and chain take 10 blows, and weapon heads take 30. Smithing skill
@@ -51,8 +52,9 @@ a handle does not affect the blade's bonuses. Cloth swings a little faster
 and deals common-tier damage. Rare sheets such as ash drake hide get their
 own damage and protection bonuses.
 
-Use the seed sieve on harvested produce to get two packets carrying its
-seed traits.
+Use the seed sieve on a sand pile to recover random harvestable seed packets.
+Each use consumes one pile. The sieve's forged material determines its yield,
+from 2 for iron to 6 for mythril. Examine the sieve to see its yield.
 
 To imbue finished gear, fit the forge with three regenerative cores or use
 a legendary smith's expertise. Load the gear with 100 units of each eligible

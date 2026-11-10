@@ -50,28 +50,43 @@
 
 /obj/item/seed_sieve
 	name = "seed sieve"
-	desc = "A fine forged mesh that separates seeds from harvested produce. Use it on produce in your other hand or on a nearby surface."
+	desc = "A fine forged mesh for sifting seed packets out of sand. Finer materials recover more seeds from each pile."
 	icon = 'icons/obj/food/containers.dmi'
 	icon_state = "tray"
 	w_class = WEIGHT_CLASS_SMALL
+	/// Seed packets recovered per pile of sand. Set from the stock when forged.
+	var/seed_yield = 2
 
+/obj/item/seed_sieve/examine(mob/user)
+	. = ..()
+	. += span_notice("It recovers [seed_yield] random seed packets per pile of sand.")
 
 /obj/item/seed_sieve/interact_with_atom(atom/interacting_with, mob/living/user, list/modifiers)
-	if((!istype(interacting_with, /obj/item/food/grown) && !istype(interacting_with, /obj/item/grown)) || SHOULD_SKIP_INTERACTION(interacting_with, src, user))
+	var/obj/item/stack/ore/glass/sand = interacting_with
+	if(!istype(sand) || istype(sand, /obj/item/stack/ore/glass/concrete_powder) || SHOULD_SKIP_INTERACTION(sand, src, user))
 		return NONE
-	var/obj/item/produce = interacting_with
-	if(!produce.get_plant_seed())
-		user.balloon_alert(user, "no viable seeds!")
+	if(sand.loc != user && !isturf(sand.loc))
 		return ITEM_INTERACT_BLOCKING
-	if(produce.loc == user)
-		if(!user.temporarilyRemoveItemFromInventory(produce, newloc = drop_location()))
-			return ITEM_INTERACT_BLOCKING
-	else if(!isturf(produce.loc))
+	var/turf/output = get_turf(sand)
+	if(!output)
 		return ITEM_INTERACT_BLOCKING
-	// seedify copies the plant's actual seed, including its genes. Its count is inclusive.
-	if(!length(seedify(produce, 1, null, null)))
+
+	var/static/list/seed_pool
+	if(isnull(seed_pool))
+		seed_pool = list()
+		for(var/obj/item/seeds/seed_type as anything in valid_subtypesof(/obj/item/seeds))
+			if(ispath(seed_type, /obj/item/seeds/random))
+				continue
+			if(initial(seed_type.yield) > 0 && initial(seed_type.product) && initial(seed_type.rarity) < PLANT_MODERATELY_RARE)
+				seed_pool += seed_type
+	var/seed_count = min(seed_yield, length(seed_pool))
+	if(!seed_count || !sand.use(1))
 		return ITEM_INTERACT_BLOCKING
-	user.balloon_alert(user, "seeds sifted")
+	var/list/choices = seed_pool.Copy()
+	for(var/index in 1 to seed_count)
+		var/seed_type = pick_n_take(choices)
+		new seed_type(output)
+	user.balloon_alert(user, "sifted [seed_count] seeds")
 	return ITEM_INTERACT_SUCCESS
 
 // Nova assembles quenched blades with wood and armor from quenched plates.
@@ -332,8 +347,9 @@ GLOBAL_LIST_INIT(smithing_material_perks, list(
 	var/output_type = recipe["output"]
 	assembled_item = new output_type(src)
 	apply_smithing_materials(assembled_item, materials, untracked_stock)
+	apply_smithing_tint(assembled_item, materials, untracked_stock)
+	apply_smithing_bonuses(assembled_item, materials, untracked_stock)
 	if(!istype(assembled_item, /obj/item/seed_sieve))
-		apply_smithing_bonuses(assembled_item, materials, untracked_stock)
 		var/armor_slot = NONE
 		if(istype(assembled_item, /obj/item/clothing/head))
 			armor_slot = ITEM_SLOT_HEAD
@@ -344,7 +360,7 @@ GLOBAL_LIST_INIT(smithing_material_perks, list(
 	assembly_strikes = 0
 	return TRUE
 
-/// Keep composition and color for all stock. New materials get controlled smithing perks
+/// Keep the composition for all stock. New materials get controlled smithing perks
 /// instead of unrelated native effects such as curses or gas release.
 /obj/structure/smithing_station/bench/proc/apply_smithing_materials(obj/item/gear, list/materials, list/untracked_stock)
 	var/native_effects = !length(untracked_stock)
@@ -353,16 +369,12 @@ GLOBAL_LIST_INIT(smithing_material_perks, list(
 			native_effects = FALSE
 			break
 	if(native_effects)
-		gear.material_flags |= MATERIAL_COLOR | MATERIAL_ADD_PREFIX | MATERIAL_EFFECTS
+		gear.material_flags |= MATERIAL_ADD_PREFIX | MATERIAL_EFFECTS
 		gear.set_custom_materials(materials)
 		return
 
 	gear.material_flags &= ~MATERIAL_EFFECTS
 	gear.set_custom_materials(materials)
-	var/list/colors = list()
-	for(var/datum/material/material as anything in materials)
-		gear.gather_material_color(material, colors, materials[material], multicolor = length(materials) > 1)
-	gear.mix_material_colors(colors)
 	var/list/material_names = list()
 	for(var/obj/item/stack/stock_type as anything in untracked_stock)
 		material_names |= initial(stock_type.name)
@@ -395,6 +407,10 @@ GLOBAL_LIST_INIT(smithing_material_perks, list(
 		return
 	for(var/perk in bonuses)
 		bonuses[perk] /= total_amount
+	if(istype(gear, /obj/item/seed_sieve))
+		var/obj/item/seed_sieve/sieve = gear
+		sieve.seed_yield = clamp(2 + round(bonuses["damage"] * 4 / 9 + 0.5), 2, 6)
+		return
 
 	var/edge = round(bonuses["edge"] + 0.5)
 	var/guard = round(bonuses["guard"] + 0.5)
