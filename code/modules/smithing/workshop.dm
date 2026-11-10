@@ -24,6 +24,37 @@ GLOBAL_LIST_INIT(smithing_native_effects, typecacheof(list(
 	/datum/material/alloy/plastitanium,
 )))
 
+/// Colors for common forging stock without a registered material datum.
+GLOBAL_LIST_INIT(smithing_stock_colors, list(
+	/obj/item/stack/sheet/cloth = "#E6DDD1",
+	/obj/item/stack/sheet/leather = "#AC774F",
+	/obj/item/stack/sheet/durathread = "#97A99A",
+	/obj/item/stack/sheet/mineral/coal = "#58585E",
+	/obj/item/stack/sheet/sinew = "#BFA582",
+	/obj/item/stack/sheet/sinew/icewing = "#85C9E5",
+	/obj/item/stack/sheet/sinew/magmawing = "#DE6C42",
+	/obj/item/stack/sheet/animalhide/goliath_hide = "#8C7360",
+	/obj/item/stack/sheet/animalhide/ashdrake = "#BC503D",
+	/obj/item/stack/sheet/lessergem = "#69BA9B",
+	/obj/item/stack/sheet/greatergem = "#A574D8",
+))
+
+/// Tint the part or finished sprite without enabling native material effects.
+/proc/apply_smithing_tint(obj/item/forged, list/materials, list/untracked_stock)
+	var/list/colors = list()
+	for(var/datum/material/material as anything in materials)
+		var/tint = material.greyscale_color || material.color || COLOR_WHITE
+		if(islist(tint))
+			tint = color_matrix2color_hex(tint)
+		// Keep the sprite's highlights readable for dark materials such as coal.
+		tint = BlendRGB(COLOR_WHITE, tint, 0.75)
+		colors[tint] += materials[material]
+	for(var/stock_type in untracked_stock)
+		var/tint = GLOB.smithing_stock_colors[stock_type] || "#C4B5A5"
+		tint = BlendRGB(COLOR_WHITE, tint, 0.75)
+		colors[tint] += untracked_stock[stock_type] * SHEET_MATERIAL_AMOUNT
+	forged.mix_material_colors(colors)
+
 /obj/item/storage/box/smithing_kit
 	name = "blacksmith workshop kit"
 	desc = "Four separately placeable smithing stations, forging tools, metal, and fuel."
@@ -226,7 +257,6 @@ GLOBAL_LIST_INIT(smithing_native_effects, typecacheof(list(
 	icon_state = "hot_plate"
 	w_class = WEIGHT_CLASS_SMALL
 	abstract_type = /obj/item/smithing_blank
-	material_flags = MATERIAL_COLOR | MATERIAL_ADD_PREFIX
 	var/part_kind
 	/// Source stack type for sheets such as cloth that have no registered material composition.
 	var/obj/item/stack/untracked_stock
@@ -249,6 +279,10 @@ GLOBAL_LIST_INIT(smithing_native_effects, typecacheof(list(
 	hot_until = world.time + 1 MINUTES
 	src.untracked_stock = untracked_stock
 	set_custom_materials(materials)
+	var/list/stock = list()
+	if(untracked_stock)
+		stock[untracked_stock] = 1
+	apply_smithing_tint(src, custom_materials, stock)
 
 /obj/item/smithing_blank/examine(mob/user)
 	. = ..()

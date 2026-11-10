@@ -99,24 +99,43 @@
 	infusion.process(1)
 	TEST_ASSERT_EQUAL(wearer.reagents.get_reagent_amount(/datum/reagent/medicine/salbutamol), 1, "Worn armor must regenerate its half-unit doses.")
 
-/datum/unit_test/blacksmith_seed_sieve
-
 /datum/unit_test/blacksmith_seed_sieve/Run()
 	var/mob/living/carbon/human/smith = allocate(/mob/living/carbon/human/consistent)
-	var/obj/item/seed_sieve/sieve = allocate(/obj/item/seed_sieve)
+	var/obj/structure/smithing_station/bench/bench = allocate(/obj/structure/smithing_station/bench)
+	var/obj/item/stack/ore/glass/sand = allocate(/obj/item/stack/ore/glass, run_loc_floor_bottom_left, 6, FALSE)
+	var/obj/item/stack/ore/glass/concrete_powder/concrete = allocate(/obj/item/stack/ore/glass/concrete_powder)
 	var/obj/item/food/grown/tomato/produce = allocate(/obj/item/food/grown/tomato)
-	var/obj/item/seeds/parent_seed = produce.get_plant_seed()
-	TEST_ASSERT_NOTNULL(parent_seed, "The test crop must have a seed.")
-	parent_seed.potency = 47
-	smith.put_in_active_hand(sieve)
-	TEST_ASSERT_EQUAL(sieve.interact_with_atom(produce, smith), ITEM_INTERACT_SUCCESS, "The sieve must process harvested produce.")
-	TEST_ASSERT(QDELETED(produce), "Sifting must consume the produce.")
-	var/seeds_found = 0
-	for(var/obj/item/seeds/tomato/seed in run_loc_floor_bottom_left)
-		seeds_found++
-		TEST_ASSERT_EQUAL(seed.potency, 47, "The sieve must copy the crop's seed traits.")
-		TEST_ASSERT_EQUAL(sieve.interact_with_atom(seed, smith), NONE, "The sieve must not duplicate existing seed packets.")
-	TEST_ASSERT_EQUAL(seeds_found, 2, "The standard sieve must produce two seed packets.")
+	var/list/expected_yields = list(
+		/datum/material/iron = 2,
+		/datum/material/gold = 3,
+		/datum/material/plasma = 4,
+		/datum/material/diamond = 5,
+		/datum/material/mythril = 6,
+	)
+	for(var/material in expected_yields)
+		var/list/composition = list()
+		composition[material] = SHEET_MATERIAL_AMOUNT
+		for(var/part_kind in list("Plate", "Chain", "Chain"))
+			var/obj/item/smithing_blank/part = new(bench, part_kind, composition)
+			part.quenched = TRUE
+		TEST_ASSERT(bench.finish_pattern("Seed Sieve"), "The bench must assemble a sieve.")
+		var/obj/item/seed_sieve/sieve = bench.assembled_item
+		TEST_ASSERT_EQUAL(sieve.seed_yield, expected_yields[material], "The sieve's yield must match its material quality.")
+		smith.put_in_active_hand(sieve)
+		TEST_ASSERT_EQUAL(sieve.interact_with_atom(produce, smith), NONE, "The sieve must leave produce alone.")
+		TEST_ASSERT_EQUAL(sieve.interact_with_atom(concrete, smith), NONE, "The sieve must reject concrete powder.")
+		var/amount_before = sand.get_amount()
+		TEST_ASSERT_EQUAL(sieve.interact_with_atom(sand, smith), ITEM_INTERACT_SUCCESS, "The sieve must process loose sand.")
+		TEST_ASSERT_EQUAL(sand.get_amount(), amount_before - 1, "Sifting must consume exactly one pile of sand.")
+		var/list/seed_types = list()
+		for(var/obj/item/seeds/seed in run_loc_floor_bottom_left)
+			TEST_ASSERT(seed.product && seed.yield > 0, "Sifting must produce harvestable seeds.")
+			TEST_ASSERT(!(seed.type in seed_types), "A batch must draw distinct seed types.")
+			seed_types += seed.type
+			qdel(seed)
+		TEST_ASSERT_EQUAL(length(seed_types), expected_yields[material], "Sifting must spawn the correct number of seed packets.")
+		qdel(sieve)
+		bench.assembled_item = null
 
 /// Exercise actual sheet pickup, casting, and the finished weapon stats for different materials.
 /datum/unit_test/blacksmith_materials/Run()
@@ -145,10 +164,13 @@
 		TEST_ASSERT(forge.cast_part(tongs, piece, "Katana blade"), "The forge must cast [sheet_type].")
 		var/obj/item/smithing_blank/part = locate() in tongs.contents
 		TEST_ASSERT_NOTNULL(part, "Casting must produce a blank.")
+		var/part_color = part.color
+		TEST_ASSERT(part_color, "A blank must show the color of [sheet_type].")
 		part.quenched = TRUE
 		part.forceMove(bench)
 		new /obj/item/stack/sheet/mineral/wood(bench, 2)
 		TEST_ASSERT(bench.finish_pattern("Katana"), "A [sheet_type] blade must assemble.")
+		TEST_ASSERT_EQUAL(bench.assembled_item.color, part_color, "The finished blade must keep the blank's material tint.")
 		weapons[sheet_type] = bench.assembled_item
 		bench.assembled_item.forceMove(run_loc_floor_bottom_left)
 		bench.assembled_item = null
@@ -160,6 +182,8 @@
 	var/obj/item/katana/forged/diamond = weapons[/obj/item/stack/sheet/mineral/diamond]
 	var/obj/item/katana/forged/mythril = weapons[/obj/item/stack/sheet/mineral/mythril]
 	var/obj/item/katana/forged/drake = weapons[/obj/item/stack/sheet/animalhide/ashdrake]
+	TEST_ASSERT(iron.color != diamond.color && diamond.color != bluespace.color, "Iron, diamond, and bluespace must show different tints.")
+	TEST_ASSERT(cloth.color != drake.color, "Stock without material datums must also have distinct colors.")
 	TEST_ASSERT_EQUAL(iron.force, initial(iron.force), "Common iron must keep the baseline melee damage.")
 	TEST_ASSERT_EQUAL(cloth.force, iron.force, "Sheets without registered materials must have common-tier damage.")
 	TEST_ASSERT(findtext(cloth.name, "cloth"), "Untracked materials must retain their names.")
@@ -179,6 +203,7 @@
 		plate.quenched = TRUE
 	TEST_ASSERT(bench.finish_pattern("Helmet"), "The bench must accept plates of mixed materials.")
 	var/obj/item/clothing/head/helmet/knight/forged/helmet = bench.assembled_item
+	TEST_ASSERT(helmet.color && helmet.color != diamond.color && helmet.color != iron.color, "Mixed armor must blend its materials' tints.")
 	var/datum/armor/base_armor = get_armor_by_type(initial(helmet.armor_type))
 	TEST_ASSERT_EQUAL(helmet.get_armor_rating("melee"), base_armor.get_rating("melee") + 4, "Two diamond plates out of four must grant half the full melee protection bonus.")
 	TEST_ASSERT_EQUAL(helmet.get_armor_rating("wound"), base_armor.get_rating("wound"), "Forging bonuses must preserve other armor ratings.")
