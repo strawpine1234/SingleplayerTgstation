@@ -29,8 +29,9 @@ hot, or upgraded forge by unsecuring it so it retains its state.
    speeds the work. Reheat cold blanks by using loaded tongs on the forge.
 4. Retrieve the shaped blank with tongs and use it on the basin. A shaped
    blank becomes a quenched part. A premature quench cools the unfinished blank.
-5. Load the quenched parts and any required wood into the workbench. Use
-   the hammer to assemble the selected pattern, then click with an empty hand
+5. Click the workbench with an empty hand to browse every pattern and check
+   how many of each part are loaded and required. Load the quenched parts and
+   any required wood, then use the hammer to assemble. Click with an empty hand
    to collect the result. Right-click the bench to unload its contents.
 
 | Finished item | Workbench parts |

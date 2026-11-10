@@ -46,16 +46,35 @@
 	TEST_ASSERT(blank.quenched, "Quenching must produce an assembly part.")
 	qdel(blank)
 
+	var/list/static_data = bench.ui_static_data(smith)
+	var/list/ui_recipes = static_data["recipes"]
+	TEST_ASSERT_EQUAL(length(ui_recipes), length(GLOB.smithing_assembly_patterns), "The recipe list must show every pattern on an empty bench.")
+	var/list/ui_recipes_by_name = list()
+	for(var/list/ui_recipe as anything in ui_recipes)
+		ui_recipes_by_name[ui_recipe["name"]] = ui_recipe
+
 	for(var/pattern in GLOB.smithing_assembly_patterns)
 		var/list/recipe = GLOB.smithing_assembly_patterns[pattern]
 		TEST_ASSERT(!bench.finish_pattern(pattern), "Assembly must require the recipe's parts.")
 		var/list/parts = recipe["parts"]
+		var/list/ui_recipe = ui_recipes_by_name[pattern]
+		TEST_ASSERT_NOTNULL(ui_recipe, "The workbench UI must list [pattern].")
+		TEST_ASSERT_EQUAL(ui_recipe["strikes"], recipe["strikes"], "The workbench UI must show the correct strike count for [pattern].")
+		var/list/ui_materials = list()
+		for(var/list/material as anything in ui_recipe["materials"])
+			ui_materials[material["name"]] = material["amount"]
 		for(var/part_kind in parts)
+			TEST_ASSERT_EQUAL(ui_materials[part_kind], parts[part_kind], "The workbench UI must show the correct amount of [part_kind] for [pattern].")
 			for(var/index in 1 to parts[part_kind])
 				var/obj/item/smithing_blank/part = new(bench, part_kind, list(/datum/material/iron = HALF_SHEET_MATERIAL_AMOUNT))
 				part.quenched = TRUE
 		if(recipe["wood"])
 			new /obj/item/stack/sheet/mineral/wood(bench, recipe["wood"])
+		TEST_ASSERT_EQUAL(ui_materials["Wood planks"], recipe["wood"], "The workbench UI must show the correct wood requirement for [pattern].")
+		var/list/ui_data = bench.ui_data(smith)
+		var/list/loaded = ui_data["loaded"]
+		for(var/material in ui_materials)
+			TEST_ASSERT_EQUAL(loaded[material], ui_materials[material], "The workbench UI must count the loaded [material].")
 		TEST_ASSERT(bench.finish_pattern(pattern), "The bench must assemble [pattern].")
 		TEST_ASSERT(istype(bench.assembled_item, recipe["output"]), "Assembly must produce the correct item.")
 		TEST_ASSERT(!bench.finish_pattern(pattern), "The same components must not yield a second item.")

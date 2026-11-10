@@ -91,7 +91,7 @@ GLOBAL_LIST_INIT(smithing_assembly_patterns, list(
 
 /obj/structure/smithing_station/bench
 	name = "smithing workbench"
-	desc = "Load quenched parts and wood. Use a forging hammer to assemble a pattern. Click the bench to collect the result or right-click to unload parts."
+	desc = "Click with an empty hand to browse recipes or collect a finished item. Load quenched parts and wood, then use a forging hammer to assemble a pattern. Right-click to unload parts."
 	icon_state = "crafting_bench_empty"
 	frame_type = /obj/item/smithing_frame/bench
 	var/selected_pattern
@@ -114,8 +114,44 @@ GLOBAL_LIST_INIT(smithing_assembly_patterns, list(
 		assembled_item = null
 		user.put_in_hands(result)
 	else
-		user.balloon_alert(user, "load parts and use a hammer")
+		ui_interact(user)
 	return TRUE
+
+/obj/structure/smithing_station/bench/ui_state(mob/user)
+	return GLOB.physical_state
+
+/obj/structure/smithing_station/bench/ui_interact(mob/user, datum/tgui/ui)
+	ui = SStgui.try_update_ui(user, src, ui)
+	if(!ui)
+		ui = new(user, src, "SmithingWorkbench", name)
+		ui.open()
+
+/obj/structure/smithing_station/bench/ui_static_data(mob/user)
+	var/list/recipes = list()
+	for(var/pattern in GLOB.smithing_assembly_patterns)
+		var/list/recipe = GLOB.smithing_assembly_patterns[pattern]
+		var/list/parts = recipe["parts"]
+		var/list/materials = list()
+		for(var/part_kind in parts)
+			materials += list(list("name" = part_kind, "amount" = parts[part_kind]))
+		if(recipe["wood"])
+			materials += list(list("name" = "Wood planks", "amount" = recipe["wood"]))
+		recipes += list(list("name" = pattern, "materials" = materials, "strikes" = recipe["strikes"]))
+	return list("recipes" = recipes)
+
+/obj/structure/smithing_station/bench/ui_data(mob/user)
+	var/list/loaded = list("Wood planks" = 0)
+	for(var/obj/item/smithing_blank/part in contents)
+		if(part.quenched)
+			loaded[part.part_kind]++
+	for(var/obj/item/stack/sheet/mineral/wood/planks in contents)
+		loaded["Wood planks"] += planks.get_amount()
+	return list(
+		"loaded" = loaded,
+		"selected_pattern" = selected_pattern,
+		"assembly_strikes" = assembly_strikes,
+		"finished_item" = assembled_item?.loc == src ? assembled_item.name : null,
+	)
 
 /obj/structure/smithing_station/bench/attack_hand_secondary(mob/user, list/modifiers)
 	if(busy || !user.can_perform_action(src))
