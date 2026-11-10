@@ -84,6 +84,7 @@
 //Supply
 #define JOB_QUARTERMASTER "Quartermaster"
 #define JOB_CARGO_TECHNICIAN "Cargo Technician"
+#define JOB_BLACKSMITH "Blacksmith"
 #define JOB_CARGO_GORILLA "Cargo Gorilla"
 #define JOB_SHAFT_MINER "Shaft Miner"
 #define JOB_BITRUNNER "Bitrunner"
@@ -175,6 +176,7 @@
 #define JOB_DISPLAY_ORDER_SHAFT_MINER 3
 #define JOB_DISPLAY_ORDER_BITRUNNER 4
 #define JOB_DISPLAY_ORDER_CARGO_GORILLA 5
+#define JOB_DISPLAY_ORDER_BLACKSMITH 6
 // Service
 #define JOB_DISPLAY_ORDER_HEAD_OF_PERSONNEL 1
 #define JOB_DISPLAY_ORDER_BARTENDER 2
