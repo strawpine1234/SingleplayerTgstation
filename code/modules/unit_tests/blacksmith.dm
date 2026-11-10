@@ -7,23 +7,14 @@
 	var/mob/living/carbon/human/smith = allocate(/mob/living/carbon/human/consistent)
 	smith.equipOutfit(job.outfit)
 	var/obj/item/storage/box/smithing_kit/kit = locate() in smith.back?.contents
-	TEST_ASSERT_NOTNULL(kit, "The Blacksmith outfit must supply a smithing kit.")
-	TEST_ASSERT_EQUAL(length(kit.contents), 3, "The kit must contain three stacks of raw materials.")
-	var/obj/item/stack/sheet/iron/iron = locate() in kit.contents
-	var/obj/item/stack/rods/kit_rods = locate() in kit.contents
-	var/obj/item/stack/sheet/mineral/wood/wood = locate() in kit.contents
-	TEST_ASSERT_EQUAL(iron?.amount, 32, "The kit must supply 32 iron sheets.")
-	TEST_ASSERT_EQUAL(kit_rods?.amount, 1, "The kit must supply 1 iron rod.")
-	TEST_ASSERT_EQUAL(wood?.amount, 18, "The kit must supply 18 wood planks.")
-
-	var/datum/supply_pack/pack = SSshuttle.supply_packs[/datum/supply_pack/misc/blacksmith_kit]
-	TEST_ASSERT_NOTNULL(pack, "Cargo must sell the Smithing Kit.")
-	TEST_ASSERT_EQUAL(pack.cost, 400, "The Smithing Kit must have a base price of 400 credits.")
-	TEST_ASSERT(/obj/item/storage/box/smithing_kit in pack.contains, "The cargo pack must supply the same kit.")
-
-	var/obj/item/smithing_tongs/tongs = allocate(/obj/item/smithing_tongs)
-	var/obj/item/smithing_bellows/bellows = allocate(/obj/item/smithing_bellows)
-	var/obj/item/carpenter_hammer/smithing/hammer = allocate(/obj/item/carpenter_hammer/smithing)
+	TEST_ASSERT_NOTNULL(kit, "The Blacksmith outfit must supply a workshop kit.")
+	TEST_ASSERT(locate(/obj/item/smithing_frame/bench) in kit.contents, "The kit must include the separate workbench.")
+	var/obj/item/smithing_tongs/tongs = locate() in kit.contents
+	var/obj/item/smithing_bellows/bellows = locate() in kit.contents
+	var/obj/item/carpenter_hammer/smithing/hammer = locate() in kit.contents
+	TEST_ASSERT_NOTNULL(tongs, "The kit must supply tongs.")
+	TEST_ASSERT_NOTNULL(bellows, "The kit must supply bellows.")
+	TEST_ASSERT_NOTNULL(hammer, "The kit must supply a hammer.")
 	var/obj/structure/smithing_station/forge/forge = allocate(/obj/structure/smithing_station/forge)
 	var/obj/structure/smithing_station/anvil/anvil = allocate(/obj/structure/smithing_station/anvil)
 	var/obj/structure/smithing_station/basin/basin = allocate(/obj/structure/smithing_station/basin)

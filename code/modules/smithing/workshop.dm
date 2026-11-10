@@ -24,20 +24,31 @@ GLOBAL_LIST_INIT(smithing_metals, typecacheof(list(
 )))
 
 /obj/item/storage/box/smithing_kit
-	name = "smithing kit"
-	desc = "Raw materials for a smithing workshop and a first katana."
+	name = "blacksmith workshop kit"
+	desc = "Four separately placeable smithing stations, forging tools, metal, and fuel."
+
+/obj/item/storage/box/smithing_kit/Initialize(mapload)
+	. = ..()
+	atom_storage.max_slots = 10
 
 /obj/item/storage/box/smithing_kit/PopulateContents()
-	new /obj/item/stack/sheet/iron(src, 32)
-	new /obj/item/stack/rods(src, 1)
-	new /obj/item/stack/sheet/mineral/wood(src, 18)
+	new /obj/item/smithing_frame/forge(src)
+	new /obj/item/smithing_frame/anvil(src)
+	new /obj/item/smithing_frame/basin(src)
+	new /obj/item/smithing_frame/bench(src)
+	new /obj/item/smithing_tongs(src)
+	new /obj/item/carpenter_hammer/smithing(src)
+	new /obj/item/smithing_bellows(src)
+	new /obj/item/stack/sheet/iron/ten(src)
+	new /obj/item/stack/sheet/mineral/wood(src, 12)
+	new /obj/item/stack/sheet/mineral/coal(src, 2)
 
 /datum/supply_pack/misc/blacksmith_kit
-	name = "Smithing Kit"
-	desc = "Contains 32 iron sheets, 1 iron rod, and 18 wood planks for building and equipping a smithing workshop and forging a katana."
-	cost = CARGO_CRATE_VALUE * 2
+	name = "Blacksmith Workshop Kit"
+	desc = "A forge, anvil, water basin, and workbench with tongs, a hammer, bellows, iron, wood, and coal."
+	cost = CARGO_CRATE_VALUE * 4
 	contains = list(/obj/item/storage/box/smithing_kit)
-	crate_name = "smithing kit crate"
+	crate_name = "blacksmith workshop crate"
 
 /obj/item/smithing_frame
 	name = "folded smithing frame"
