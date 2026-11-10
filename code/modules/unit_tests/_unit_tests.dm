@@ -125,6 +125,7 @@
 #include "bespoke_id.dm"
 #include "binary_insert.dm"
 #include "bitrunning.dm"
+#include "blacksmith.dm"
 #include "blindness.dm"
 #include "blood_volume_procs.dm"
 #include "bloody_footprints.dm"
