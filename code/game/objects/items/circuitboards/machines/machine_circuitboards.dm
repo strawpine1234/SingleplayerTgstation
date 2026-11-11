@@ -586,6 +586,15 @@
 	)
 	needs_anchored = FALSE
 
+/obj/item/circuitboard/machine/smart_hopper
+	name = "Smart Hopper"
+	greyscale_colors = CIRCUIT_COLOR_SERVICE
+	build_path = /obj/machinery/smart_hopper
+	req_components = list(
+		/datum/stock_part/matter_bin = 1,
+		/datum/stock_part/servo = 1,
+	)
+
 /obj/item/circuitboard/machine/smartfridge
 	name = "Smartfridge"
 	build_path = /obj/machinery/smartfridge

@@ -570,6 +570,13 @@
 	)
 	departmental_flags = DEPARTMENT_BITFLAG_SERVICE
 
+/datum/design/board/smart_hopper
+	name = "Smart Hopper Board"
+	desc = "Used to build a Smart Hopper."
+	build_path = /obj/item/circuitboard/machine/smart_hopper
+	category = list(RND_CATEGORY_MACHINE + RND_SUBCATEGORY_MACHINE_KITCHEN)
+	departmental_flags = DEPARTMENT_BITFLAG_SERVICE
+
 /datum/design/board/smartfridge
 	name = "Smartfridge Board"
 	desc = "Used to build a smartfridge."

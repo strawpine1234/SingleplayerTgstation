@@ -156,6 +156,7 @@
 		/datum/design/board/monkey_recycler,
 		/datum/design/board/reagentgrinder,
 		/datum/design/board/microwave_engineering,
+		/datum/design/board/smart_hopper,
 		/datum/design/board/smartfridge,
 		/datum/design/board/dehydrator,
 		/datum/design/board/sheetifier,
