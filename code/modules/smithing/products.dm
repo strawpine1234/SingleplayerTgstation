@@ -1,11 +1,22 @@
 // Adapted from Nova Sector's AGPL-3.0 reagent_forging module. See the Blacksmith guide for provenance.
 /obj/item/katana/forged
 	desc = "A station-forged katana with a folded edge and a wrapped grip."
+	icon = 'icons/obj/smithing/forged_products.dmi'
+	icon_state = "katana"
+	lefthand_file = 'icons/mob/smithing/forged_products_lefthand.dmi'
+	righthand_file = 'icons/mob/smithing/forged_products_righthand.dmi'
+	inhand_icon_state = "katana"
 	force = 24
 	block_chance = 30
 
 /obj/item/claymore/forged
 	desc = "A long, heavy blade with a broad crossguard, forged for powerful swings."
+	icon = 'icons/obj/smithing/forged_products.dmi'
+	icon_state = "claymore"
+	lefthand_file = 'icons/mob/smithing/forged_products_lefthand.dmi'
+	righthand_file = 'icons/mob/smithing/forged_products_righthand.dmi'
+	inhand_icon_state = "claymore"
+	worn_icon_state = "claymore"
 	force = 27
 	block_chance = 25
 	w_class = WEIGHT_CLASS_BULKY
@@ -13,37 +24,77 @@
 /obj/item/claymore/forged_broadsword
 	name = "broadsword"
 	desc = "A broad, straight blade with a stout guard and a balanced grip."
-	icon_state = "claymore_old"
+	icon = 'icons/obj/smithing/forged_products.dmi'
+	icon_state = "broadsword"
+	lefthand_file = 'icons/mob/smithing/forged_products_lefthand.dmi'
+	righthand_file = 'icons/mob/smithing/forged_products_righthand.dmi'
+	inhand_icon_state = "broadsword"
+	worn_icon_state = "claymore"
 	force = 25
 	block_chance = 35
 
 /obj/item/claymore/shortsword/forged
 	desc = "A compact forged blade for close work and tight passages."
+	icon = 'icons/obj/smithing/forged_products.dmi'
+	icon_state = "shortsword"
+	lefthand_file = 'icons/mob/smithing/forged_products_lefthand.dmi'
+	righthand_file = 'icons/mob/smithing/forged_products_righthand.dmi'
+	inhand_icon_state = "shortsword"
+	worn_icon_state = "shortsword"
 
 /obj/item/knife/combat/forged_dagger
 	name = "dagger"
 	desc = "A narrow, double-edged dagger with a simple forged guard."
+	icon = 'icons/obj/smithing/forged_products.dmi'
+	icon_state = "dagger"
+	lefthand_file = 'icons/mob/smithing/forged_products_lefthand.dmi'
+	righthand_file = 'icons/mob/smithing/forged_products_righthand.dmi'
+	inhand_icon_state = "dagger"
+	worn_icon_state = "buckknife"
 	force = 15
 
 /obj/item/shield/roman/forged
 	name = "forged shield"
 	desc = "A hand-forged metal shield with a rolled rim and a reinforced grip."
+	icon = 'icons/obj/smithing/forged_products.dmi'
+	icon_state = "shield"
+	lefthand_file = 'icons/mob/smithing/forged_products_lefthand.dmi'
+	righthand_file = 'icons/mob/smithing/forged_products_righthand.dmi'
+	inhand_icon_state = "shield"
+	worn_icon_state = "roman_shield"
 	max_integrity = 100
 	block_chance = 35
 
 /obj/item/clothing/suit/armor/vest/cuirass/forged
 	name = "forged chestplate"
 	desc = "Shaped and quenched metal plates fitted to protect the torso."
+	icon = 'icons/obj/smithing/forged_products.dmi'
+	icon_state = "chestplate"
+	lefthand_file = 'icons/mob/smithing/forged_products_lefthand.dmi'
+	righthand_file = 'icons/mob/smithing/forged_products_righthand.dmi'
+	inhand_icon_state = "chestplate"
+	worn_icon = 'icons/mob/smithing/forged_armor_worn.dmi'
+	worn_icon_state = "chestplate"
 
 /obj/item/clothing/head/helmet/knight/forged
 	name = "forged helmet"
 	desc = "A closed steel helmet with a narrow eye slit and a padded liner."
+	icon = 'icons/obj/smithing/forged_products.dmi'
+	icon_state = "helmet"
+	lefthand_file = 'icons/mob/smithing/forged_products_lefthand.dmi'
+	righthand_file = 'icons/mob/smithing/forged_products_righthand.dmi'
+	inhand_icon_state = "helmet"
+	worn_icon = 'icons/mob/smithing/forged_armor_worn.dmi'
+	worn_icon_state = "helmet"
 
 /obj/item/carpenter_hammer/forged_warhammer
 	name = "warhammer"
 	desc = "A heavy forged striking head on a reinforced haft."
-	icon_state = "hammeron"
-	inhand_icon_state = "hammeron"
+	icon = 'icons/obj/smithing/forged_products.dmi'
+	icon_state = "warhammer"
+	lefthand_file = 'icons/mob/smithing/forged_products_lefthand.dmi'
+	righthand_file = 'icons/mob/smithing/forged_products_righthand.dmi'
+	inhand_icon_state = "warhammer"
 	worn_icon_state = "hammeron"
 	force = 28
 	w_class = WEIGHT_CLASS_BULKY
@@ -51,8 +102,11 @@
 /obj/item/seed_sieve
 	name = "seed sieve"
 	desc = "A fine forged mesh for sifting seed packets out of sand. Finer materials recover more seeds from each pile."
-	icon = 'icons/obj/food/containers.dmi'
-	icon_state = "tray"
+	icon = 'icons/obj/smithing/forged_products.dmi'
+	icon_state = "seed_sieve"
+	lefthand_file = 'icons/mob/smithing/forged_products_lefthand.dmi'
+	righthand_file = 'icons/mob/smithing/forged_products_righthand.dmi'
+	inhand_icon_state = "seed_sieve"
 	w_class = WEIGHT_CLASS_SMALL
 	/// Seed packets recovered per pile of sand. Set from the stock when forged.
 	var/seed_yield = 2
