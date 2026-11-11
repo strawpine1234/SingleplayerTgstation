@@ -58,3 +58,6 @@
 #define CENTCOM_TEST_MODERATE "Moderate"
 #define CENTCOM_TEST_MAJOR "Major"
 #define CENTCOM_TEST_CATASTROPHIC "Catastrophic"
+
+/// Ghost-controlled and ghost-dependent trials.
+#define CENTCOM_TEST_MISC "Misc"

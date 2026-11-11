@@ -36,10 +36,12 @@
 	for(var/datum/round_event_control/control as anything in SSevents.control)
 		if(control.name)
 			TEST_ASSERT_EQUAL(SSevents.testing_events["[control.type]"], control, "The console must catalogue every named event control.")
-	var/list/bands = list(CENTCOM_TEST_MINOR, CENTCOM_TEST_MODERATE, CENTCOM_TEST_MAJOR, CENTCOM_TEST_CATASTROPHIC)
+	var/list/bands = list(CENTCOM_TEST_MINOR, CENTCOM_TEST_MODERATE, CENTCOM_TEST_MAJOR, CENTCOM_TEST_CATASTROPHIC, CENTCOM_TEST_MISC)
 	for(var/id in SSevents.testing_events)
 		var/datum/round_event_control/control = SSevents.testing_events[id]
-		TEST_ASSERT(control.get_testing_severity() in bands, "Every trial must belong to a severity tab.")
+		TEST_ASSERT(control.get_testing_severity() in bands, "Every trial must belong to a console tab.")
+		if(ispath(control.typepath, /datum/round_event/ghost_role))
+			TEST_ASSERT_EQUAL(control.get_testing_severity(), CENTCOM_TEST_MISC, "Ghost-controlled roles must appear in Misc.")
 
 	var/mob/living/carbon/human/user = allocate(/mob/living/carbon/human/consistent)
 	var/obj/machinery/computer/centcom_testing/console = allocate(/obj/machinery/computer/centcom_testing)

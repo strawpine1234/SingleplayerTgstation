@@ -71,6 +71,8 @@
 	var/testing_severity
 
 /datum/round_event_control/proc/get_testing_severity()
+	if(ispath(typepath, /datum/round_event/ghost_role))
+		return CENTCOM_TEST_MISC
 	if(testing_severity)
 		return testing_severity
 	switch(category)
@@ -102,3 +104,10 @@
 	testing_severity = CENTCOM_TEST_CATASTROPHIC
 /datum/round_event_control/wizard/blobies
 	testing_severity = CENTCOM_TEST_CATASTROPHIC
+
+/datum/round_event_control/wizard/imposter
+	testing_severity = CENTCOM_TEST_MISC
+/datum/round_event_control/wizard/possession
+	testing_severity = CENTCOM_TEST_MISC
+/datum/round_event_control/wizard/ghost
+	testing_severity = CENTCOM_TEST_MISC

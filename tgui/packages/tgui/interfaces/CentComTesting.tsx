@@ -23,7 +23,7 @@ type Trial = {
 };
 
 type Data = { events: Trial[]; status: string };
-const severities = ['Minor', 'Moderate', 'Major', 'Catastrophic'];
+const severities = ['Minor', 'Moderate', 'Major', 'Catastrophic', 'Misc'];
 
 export const CentComTesting = () => {
   const { act, data } = useBackend<Data>();
@@ -62,6 +62,12 @@ export const CentComTesting = () => {
                 </Tabs.Tab>
               ))}
             </Tabs>
+            {severity === 'Misc' && (
+              <Box color="label" my={1}>
+                Ghost-controlled roles and ghost-dependent trials. Available
+                ghosts are needed to participate.
+              </Box>
+            )}
             <Input
               fluid
               placeholder="Search trials..."
