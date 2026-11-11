@@ -824,3 +824,61 @@
 
 /obj/machinery/smartfridge/disks/accept_check(obj/item/weapon)
 	return istype(weapon, /obj/item/disk)
+
+/obj/machinery/smart_hopper
+	name = "Smart Hopper"
+	desc = "Feeds items placed on top into an adjacent Smartfridge. A wrench rotates the outlet clockwise."
+	icon = 'icons/obj/machines/kitchen.dmi'
+	icon_state = "grinder"
+	layer = BELOW_OBJ_LAYER
+	density = FALSE
+	anchored = TRUE
+	circuit = /obj/item/circuitboard/machine/smart_hopper
+	idle_power_usage = 5 WATTS
+
+/obj/machinery/smart_hopper/Initialize(mapload)
+	. = ..()
+	START_PROCESSING(SSmachines, src)
+
+/obj/machinery/smart_hopper/Destroy()
+	STOP_PROCESSING(SSmachines, src)
+	return ..()
+
+/obj/machinery/smart_hopper/examine(mob/user)
+	. = ..()
+	. += span_notice("The outlet points [dir2text(dir)]. Use a wrench to rotate it.")
+
+/obj/machinery/smart_hopper/wrench_act(mob/living/user, obj/item/tool)
+	setDir(turn(dir, -90))
+	tool.play_tool_sound(src)
+	balloon_alert(user, "outlet faces [dir2text(dir)]")
+	return ITEM_INTERACT_SUCCESS
+
+/obj/machinery/smart_hopper/screwdriver_act(mob/living/user, obj/item/tool)
+	return default_deconstruction_screwdriver(user, tool)
+
+/obj/machinery/smart_hopper/crowbar_act(mob/living/user, obj/item/tool)
+	return default_pry_open(user, tool, close_after_pry = TRUE, deconstruct_on_fail = TRUE)
+
+/obj/machinery/smart_hopper/process(seconds_per_tick)
+	if(machine_stat || panel_open)
+		return
+	var/turf/input = loc
+	if(!isturf(input))
+		return
+	var/obj/machinery/smartfridge/fridge = locate() in get_step(input, dir)
+	if(!fridge || fridge.machine_stat || fridge.panel_open)
+		return
+	var/available_slots = fridge.max_n_of_items - fridge.visible_items()
+	if(available_slots <= 0)
+		return
+	var/loaded = FALSE
+	for(var/obj/item/item in input)
+		if(item.anchored || !fridge.can_load_item(item) || !fridge.load(item))
+			continue
+		loaded = TRUE
+		if(--available_slots <= 0)
+			break
+	if(loaded)
+		fridge.update_appearance()
+		SStgui.update_uis(fridge)
