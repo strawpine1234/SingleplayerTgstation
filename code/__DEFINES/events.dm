@@ -52,3 +52,9 @@
 #define FUGITIVE_BACKSTORY_PRISONER "prisoner"
 #define FUGITIVE_BACKSTORY_CULTIST "cultist"
 #define FUGITIVE_BACKSTORY_SYNTH "synth"
+
+/// CentCom Testing Initiative severity bands.
+#define CENTCOM_TEST_MINOR "Minor"
+#define CENTCOM_TEST_MODERATE "Moderate"
+#define CENTCOM_TEST_MAJOR "Major"
+#define CENTCOM_TEST_CATASTROPHIC "Catastrophic"

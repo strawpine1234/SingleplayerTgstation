@@ -3,6 +3,7 @@
 	description = "Nanotrasen's finest in ergonomic office tech, ensuring station admin stays productive and compliant with corporate policies — because even in space, paperwork never stops."
 	node_flags = parent_type::node_flags | TECHWEB_NODE_STARTER
 	unlocked_designs = list(
+		/datum/design/board/centcom_testing,
 		/datum/design/board/fax,
 		/datum/design/sec_pen,
 		/datum/design/handlabeler,

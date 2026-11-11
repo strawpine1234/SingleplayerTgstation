@@ -374,3 +374,10 @@
 		RND_CATEGORY_COMPUTER + RND_SUBCATEGORY_COMPUTER_CARGO
 	)
 	departmental_flags = DEPARTMENT_BITFLAG_ENGINEERING
+
+/datum/design/board/centcom_testing
+	name = "CentCom Testing Initiative Console Board"
+	desc = "Used to build a console authorizing station-scale CentCom trials."
+	build_path = /obj/item/circuitboard/computer/centcom_testing
+	category = list(RND_CATEGORY_COMPUTER + RND_SUBCATEGORY_COMPUTER_RESEARCH)
+	departmental_flags = DEPARTMENT_BITFLAG_SCIENCE | DEPARTMENT_BITFLAG_ENGINEERING

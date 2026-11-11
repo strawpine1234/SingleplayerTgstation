@@ -22,15 +22,23 @@ SUBSYSTEM_DEF(events)
 	var/frequency_upper = 7 MINUTES
 	///Will wizard events be included in the event pool?
 	var/wizardmode = FALSE
+	/// Singleplayer tests replace naturally scheduled events; running events still process.
+	var/manual_testing_only = TRUE
+	/// All named event controls, including events unsuitable for the current map.
+	var/list/testing_events = list()
+	/// Shared debounce across every testing console.
+	var/next_test_time = 0
 
 /datum/controller/subsystem/events/Initialize()
 	for(var/type in typesof(/datum/round_event_control))
 		var/datum/round_event_control/event = new type()
 		if(!event.typepath)
 			continue
+		if(event.name)
+			testing_events["[event.type]"] = event
 		if(!event.valid_for_map())
 			nonrunning_events_by_name[event.name] = event.type
-			continue //don't want this one! leave it for the garbage collector
+			continue // Retain it in the testing catalogue, but exclude it from natural selection.
 		control += event //add it to the list of all events (controls)
 		events_by_name[event.name] = event
 
@@ -84,6 +92,8 @@ SUBSYSTEM_DEF(events)
 
 //checks if we should select a random event yet, and reschedules if necessary
 /datum/controller/subsystem/events/proc/checkEvent()
+	if(manual_testing_only)
+		return
 	if(scheduled <= world.time)
 #ifdef MAP_TEST
 		message_admins("Random event skipped (Game is compiled in MAP_TEST mode)")
@@ -104,7 +114,7 @@ SUBSYSTEM_DEF(events)
  */
 /datum/controller/subsystem/events/proc/spawnEvent(datum/round_event_control/excluded_event)
 	set waitfor = FALSE //for the admin prompt
-	if(!CONFIG_GET(flag/allow_random_events))
+	if(manual_testing_only || !CONFIG_GET(flag/allow_random_events))
 		return
 
 	var/players_amt = get_active_player_count(alive_check = TRUE, afk_check = TRUE, human_check = TRUE)

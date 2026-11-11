@@ -746,3 +746,8 @@
 /obj/item/circuitboard/computer/shuttle/docker
 	name = "Shuttle Navigation Computer"
 	build_path = /obj/machinery/computer/camera_advanced/shuttle_docker/custom
+
+/obj/item/circuitboard/computer/centcom_testing
+	name = "CentCom Testing Initiative console"
+	greyscale_colors = CIRCUIT_COLOR_SCIENCE
+	build_path = /obj/machinery/computer/centcom_testing

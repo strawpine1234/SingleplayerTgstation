@@ -2528,6 +2528,7 @@
 #include "code\game\machinery\computer\apc_control.dm"
 #include "code\game\machinery\computer\atmos_alert.dm"
 #include "code\game\machinery\computer\buildandrepair.dm"
+#include "code\game\machinery\computer\centcom_testing.dm"
 #include "code\game\machinery\computer\camera.dm"
 #include "code\game\machinery\computer\camera_advanced.dm"
 #include "code\game\machinery\computer\communications.dm"
