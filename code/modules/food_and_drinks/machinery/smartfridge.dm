@@ -828,8 +828,8 @@
 /obj/machinery/smart_hopper
 	name = "Smart Hopper"
 	desc = "Feeds items placed on top into an adjacent Smartfridge. A wrench rotates the outlet clockwise."
-	icon = 'icons/obj/machines/kitchen.dmi'
-	icon_state = "grinder"
+	icon = 'icons/obj/machines/smart_hopper.dmi'
+	icon_state = "hopper"
 	layer = BELOW_OBJ_LAYER
 	density = FALSE
 	anchored = TRUE
