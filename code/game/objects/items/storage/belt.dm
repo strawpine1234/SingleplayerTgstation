@@ -45,6 +45,31 @@
 	pickup_sound = 'sound/items/handling/toolbelt_pickup.ogg'
 	storage_type = /datum/storage/utility_belt
 
+/obj/item/storage/belt/utility/holding
+	name = "belt of holding"
+	desc = "A toolbelt with a bluespace pocket that holds twice as much as a standard toolbelt."
+
+/obj/item/storage/belt/utility/holding/Initialize(mapload)
+	. = ..()
+	atom_storage.max_slots *= 2
+	atom_storage.max_total_storage *= 2
+
+/obj/item/belt_of_holding_inert
+	name = "inert belt of holding"
+	desc = "An unfinished toolbelt with an empty slot for a bluespace anomaly core."
+	icon = 'icons/obj/clothing/belts.dmi'
+	icon_state = "utility"
+	inhand_icon_state = "utility"
+	lefthand_file = 'icons/mob/inhands/equipment/belt_lefthand.dmi'
+	righthand_file = 'icons/mob/inhands/equipment/belt_righthand.dmi'
+	w_class = WEIGHT_CLASS_BULKY
+	item_flags = NO_MAT_REDEMPTION
+
+/obj/item/belt_of_holding_inert/Initialize(mapload)
+	. = ..()
+	var/static/list/recipes = list(/datum/crafting_recipe/belt_holding)
+	AddElement(/datum/element/slapcrafting, recipes)
+
 /obj/item/storage/belt/utility/chief
 	name = "chief engineer's toolbelt"
 	desc = "Holds tools, looks snazzy."

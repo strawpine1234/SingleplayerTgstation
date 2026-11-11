@@ -21,6 +21,15 @@
 	result = /obj/item/storage/backpack/holding
 	category = CAT_CONTAINERS
 
+/datum/crafting_recipe/belt_holding
+	name = "Belt of Holding"
+	reqs = list(
+		/obj/item/belt_of_holding_inert = 1,
+		/obj/item/assembly/signaler/anomaly/bluespace = 1,
+	)
+	result = /obj/item/storage/belt/utility/holding
+	category = CAT_CONTAINERS
+
 /datum/crafting_recipe/underwater_basket
 	name = "Underwater Basket (Bamboo)"
 	reqs = list(
