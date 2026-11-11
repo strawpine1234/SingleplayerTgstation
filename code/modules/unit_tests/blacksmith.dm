@@ -129,13 +129,26 @@
 		TEST_ASSERT_EQUAL(sand.get_amount(), amount_before - 1, "Sifting must consume exactly one pile of sand.")
 		var/list/seed_types = list()
 		for(var/obj/item/seeds/seed in run_loc_floor_bottom_left)
-			TEST_ASSERT(seed.product && seed.yield > 0, "Sifting must produce harvestable seeds.")
 			TEST_ASSERT(!(seed.type in seed_types), "A batch must draw distinct seed types.")
 			seed_types += seed.type
 			qdel(seed)
 		TEST_ASSERT_EQUAL(length(seed_types), expected_yields[material], "Sifting must spawn the correct number of seed packets.")
 		qdel(sieve)
 		bench.assembled_item = null
+
+	// Draw the whole pool in one sift so the test never depends on a lucky roll.
+	var/list/seed_pool = valid_subtypesof(/obj/item/seeds)
+	var/obj/item/seed_sieve/full_pool_sieve = allocate(/obj/item/seed_sieve)
+	full_pool_sieve.seed_yield = length(seed_pool)
+	smith.put_in_active_hand(full_pool_sieve)
+	TEST_ASSERT_EQUAL(full_pool_sieve.interact_with_atom(sand, smith), ITEM_INTERACT_SUCCESS, "The sieve must draw from the full pool.")
+	var/list/found_seed_types = list()
+	for(var/obj/item/seeds/seed in run_loc_floor_bottom_left)
+		found_seed_types |= seed.type
+		qdel(seed)
+	TEST_ASSERT(/obj/item/seeds/random in found_seed_types, "The sieve must be able to find Strange Seed Packs.")
+	TEST_ASSERT(/obj/item/seeds/tomato/blue/bluespace in found_seed_types, "The sieve must be able to find mutant seed varieties.")
+	TEST_ASSERT_EQUAL(length(seed_pool - found_seed_types), 0, "Every concrete seed type must be available from sand.")
 
 /// Exercise actual sheet pickup, casting, and the finished weapon stats for different materials.
 /datum/unit_test/blacksmith_materials/Run()

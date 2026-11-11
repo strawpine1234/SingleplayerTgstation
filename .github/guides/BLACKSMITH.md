@@ -52,7 +52,8 @@ a handle does not affect the blade's bonuses. Cloth swings a little faster
 and deals common-tier damage. Rare sheets such as ash drake hide get their
 own damage and protection bonuses.
 
-Use the seed sieve on a sand pile to recover random harvestable seed packets.
+Use the seed sieve on a sand pile to recover random seed packets, including
+Strange Seed Packs and mutant varieties.
 Each use consumes one pile. The sieve's forged material determines its yield,
 from 2 for iron to 6 for mythril. Examine the sieve to see its yield.
 

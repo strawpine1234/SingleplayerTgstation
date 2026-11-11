@@ -71,14 +71,7 @@
 	if(!output)
 		return ITEM_INTERACT_BLOCKING
 
-	var/static/list/seed_pool
-	if(isnull(seed_pool))
-		seed_pool = list()
-		for(var/obj/item/seeds/seed_type as anything in valid_subtypesof(/obj/item/seeds))
-			if(ispath(seed_type, /obj/item/seeds/random))
-				continue
-			if(initial(seed_type.yield) > 0 && initial(seed_type.product) && initial(seed_type.rarity) < PLANT_MODERATELY_RARE)
-				seed_pool += seed_type
+	var/static/list/seed_pool = valid_subtypesof(/obj/item/seeds)
 	var/seed_count = min(seed_yield, length(seed_pool))
 	if(!seed_count || !sand.use(1))
 		return ITEM_INTERACT_BLOCKING
