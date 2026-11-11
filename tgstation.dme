@@ -2046,6 +2046,7 @@
 #include "code\datums\mutations\passive.dm"
 #include "code\datums\mutations\radioactive.dm"
 #include "code\datums\mutations\reach.dm"
+#include "code\datums\mutations\regenerative_torpor.dm"
 #include "code\datums\mutations\sight.dm"
 #include "code\datums\mutations\speech.dm"
 #include "code\datums\mutations\telepathy.dm"
