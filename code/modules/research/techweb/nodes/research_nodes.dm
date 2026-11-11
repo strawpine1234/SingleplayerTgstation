@@ -88,6 +88,7 @@
 	description = "New shells designed to utilize anomaly cores, maximizing their potential in innovative ways."
 	prerequisite_nodes = list(/datum/techweb_node/anomaly_research)
 	unlocked_designs = list(
+		/datum/design/belt_holding,
 		/datum/design/bag_holding,
 		/datum/design/cybernetic_heart/anomalock,
 		/datum/design/module/mod_storage_holding,
