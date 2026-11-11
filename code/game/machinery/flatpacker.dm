@@ -16,7 +16,7 @@
 	/// Coefficient applied to consumed materials. Lower values result in lower material consumption.
 	var/creation_efficiency = 2
 	///The container to hold materials
-	var/datum/material_container/materials
+	var/datum/remote_materials/materials
 	/// The inserted board
 	var/obj/item/circuitboard/machine/inserted_board
 	/// List of components that need to be packed along with the circuitboard
@@ -33,12 +33,11 @@
 /obj/machinery/flatpacker/Initialize(mapload)
 	register_context()
 
-	materials = new ( \
-		src, \
-		SSmaterials.get_materials_by_flag(MATERIAL_SILO_STORED), \
-		0, \
-		MATCONTAINER_EXAMINE, \
-		container_signals = list(COMSIG_MATCONTAINER_ITEM_CONSUMED = TYPE_PROC_REF(/obj/machinery/flatpacker, AfterMaterialInsert)) \
+	materials = new(
+		src,
+		mapload,
+		mat_container_flags = MATCONTAINER_EXAMINE,
+		mat_container_signals = list(COMSIG_MATCONTAINER_ITEM_CONSUMED = TYPE_PROC_REF(/obj/machinery/flatpacker, AfterMaterialInsert)),
 	)
 
 	return ..()
@@ -78,9 +77,12 @@
 
 	. += span_notice("The status display reads:")
 	. += span_notice("Capable of packing up to <b>Tier [max_part_tier]</b>.")
-	. += span_notice("Storing up to <b>[materials.max_amount]</b> material units.")
+	. += span_notice("Local storage capacity of <b>[materials.local_size]</b> material units.")
 	. += span_notice("Material consumption at <b>[creation_efficiency * 100]%</b>.")
 
+	. += span_notice("Use a multitool with an ore silo saved in its buffer to link the material supply.")
+	if(materials.silo)
+		. += span_notice("Connected to [materials.silo].")
 	. += span_notice("Its maintenance panel can be [EXAMINE_HINT("screwed")] [panel_open ? "close" : "open"].")
 	if(panel_open)
 		. += span_notice("It can be [EXAMINE_HINT("pried")] apart.")
@@ -151,7 +153,7 @@
 	var/mat_capacity = 0
 	for(var/datum/stock_part/matter_bin/new_matter_bin in component_parts)
 		mat_capacity += new_matter_bin.tier * 25 * SHEET_MATERIAL_AMOUNT
-	materials.max_amount = mat_capacity
+	materials.set_local_size(mat_capacity)
 
 	var/datum/stock_part/servo/servo = locate() in component_parts
 	max_part_tier = servo.tier
@@ -284,12 +286,12 @@
 	)
 
 /obj/machinery/flatpacker/ui_static_data(mob/user)
-	return materials.ui_static_data()
+	return materials.mat_container.ui_static_data()
 
 /obj/machinery/flatpacker/ui_data(mob/user)
 	. = list()
 
-	.["materials"] = materials.ui_data()
+	.["materials"] = materials.mat_container.ui_data()
 	.["busy"] = busy
 
 	var/list/design
@@ -306,7 +308,9 @@
 		var/disableReason = ""
 		if(print_tier > max_part_tier)
 			disableReason = "This design is too advanced for this machine. "
-		else if(!materials.has_materials(needed_mats, creation_efficiency))
+		else if(materials.on_hold())
+			disableReason = "Ore silo access is on hold. "
+		else if(!materials.mat_container.has_materials(needed_mats, creation_efficiency))
 			disableReason = "Not enough materials. "
 		else
 			for(var/obj/item/component as anything in inserted_board.flatpack_components)
@@ -342,8 +346,16 @@
 				if(inserted_board.req_components[component] != get_flatpack_component_count(component))
 					say("Not enough [get_flatpack_component_name(component)].")
 					return
-			if(!materials.has_materials(needed_mats, creation_efficiency))
+			if(!materials.mat_container.has_materials(needed_mats, creation_efficiency))
 				say("Not enough materials to begin production.")
+				return
+			if(!materials.use_materials(
+				needed_mats,
+				creation_efficiency,
+				action = "built",
+				name = initial(inserted_board.name),
+				user_data = ID_DATA(ui.user),
+			))
 				return
 			playsound(src, 'sound/items/tools/rped.ogg', 50, TRUE)
 
@@ -374,7 +386,7 @@
 				say("No power to dispense sheets")
 				return
 
-			materials.retrieve_stack(amount, material)
+			materials.eject_sheets(material, amount, user_data = ID_DATA(ui.user))
 			return TRUE
 
 /**
@@ -388,7 +400,6 @@
 
 	busy = FALSE
 
-	materials.use_materials(needed_mats, creation_efficiency)
 	var/obj/item/flatpack/box = new (drop_location(), board)
 	for(var/obj/item/component as anything in flatpacked_components)
 		component.forceMove(box)
