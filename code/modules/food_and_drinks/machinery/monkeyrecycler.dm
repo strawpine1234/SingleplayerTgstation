@@ -24,13 +24,14 @@ GLOBAL_LIST_EMPTY(monkey_recyclers)
 	GLOB.monkey_recyclers -= src
 	return ..()
 
-/obj/machinery/monkey_recycler/RefreshParts() //Ranges from 0.2 to 0.8 per monkey recycled
+/obj/machinery/monkey_recycler/RefreshParts()
 	. = ..()
-	cube_production = 0
+	var/total_tiers = 0
 	for(var/datum/stock_part/servo/servo in component_parts)
-		cube_production += servo.tier * 0.1
+		total_tiers += servo.tier
 	for(var/datum/stock_part/matter_bin/matter_bin in component_parts)
-		cube_production += matter_bin.tier * 0.1
+		total_tiers += matter_bin.tier
+	cube_production = total_tiers >= 8 ? 1 : total_tiers * 0.1
 
 /obj/machinery/monkey_recycler/examine(mob/user)
 	. = ..()
