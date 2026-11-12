@@ -2498,6 +2498,7 @@
 #include "code\game\machinery\syndicatebomb.dm"
 #include "code\game\machinery\teambuilder.dm"
 #include "code\game\machinery\teleporter.dm"
+#include "code\game\machinery\trade_sellers.dm"
 #include "code\game\machinery\transformer.dm"
 #include "code\game\machinery\wall_healer.dm"
 #include "code\game\machinery\wall_vitals.dm"

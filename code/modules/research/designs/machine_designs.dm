@@ -1338,3 +1338,17 @@
 	build_path = /obj/item/circuitboard/machine/gas_miner
 	category = list(RND_CATEGORY_MACHINE + RND_SUBCATEGORY_MACHINE_ATMOS)
 	departmental_flags = ALL
+
+/datum/design/board/item_seller
+	name = "Item Seller Board"
+	desc = "A board for an item export terminal."
+	build_path = /obj/item/circuitboard/machine/item_seller
+	category = list(RND_CATEGORY_MACHINE + RND_SUBCATEGORY_MACHINE_CARGO)
+	departmental_flags = ALL
+
+/datum/design/board/gas_seller
+	name = "Gas Seller Board"
+	desc = "A board for a piped, per-mole gas export terminal."
+	build_path = /obj/item/circuitboard/machine/gas_seller
+	category = list(RND_CATEGORY_MACHINE + RND_SUBCATEGORY_MACHINE_ATMOS)
+	departmental_flags = ALL

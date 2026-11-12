@@ -2113,3 +2113,23 @@
 	machine.name = "[gas_selection] gas miner"
 	machine.update_appearance()
 	return TRUE
+
+/obj/item/circuitboard/machine/item_seller
+	name = "Item Seller"
+	greyscale_colors = CIRCUIT_COLOR_SUPPLY
+	build_path = /obj/machinery/item_seller
+	req_components = list(
+		/datum/stock_part/matter_bin = 2,
+		/datum/stock_part/scanning_module = 1,
+		/obj/item/stack/cable_coil = 5,
+	)
+
+/obj/item/circuitboard/machine/gas_seller
+	name = "Gas Seller"
+	greyscale_colors = CIRCUIT_COLOR_ENGINEERING
+	build_path = /obj/machinery/atmospherics/components/unary/gas_seller
+	req_components = list(
+		/datum/stock_part/matter_bin = 1,
+		/datum/stock_part/scanning_module = 1,
+		/obj/item/stack/cable_coil = 5,
+	)
