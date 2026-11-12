@@ -29,10 +29,10 @@
 /obj/machinery/bsc_pad/proc/delivery_turfs()
 	var/list/available = list()
 	var/turf/center = get_turf(src)
-	if(istype(center, /turf/open/floor) && !center.is_blocked_turf())
+	if(istype(center, /turf/open/floor) && !center.is_blocked_turf() && !(locate(/obj/effect/pod_landingzone) in center))
 		available += center
 	for(var/turf/open/floor/candidate in range(2, center))
-		if(candidate != center && !candidate.is_blocked_turf())
+		if(candidate != center && !candidate.is_blocked_turf() && !(locate(/obj/effect/pod_landingzone) in candidate))
 			available += candidate
 	return available
 
@@ -68,7 +68,7 @@
 	return ITEM_INTERACT_SUCCESS
 
 /obj/machinery/computer/cargo/bluespace/proc/pack_available(datum/supply_pack/pack)
-	if(!pack || SSshuttle.supply_packs[pack.type] != pack)
+	if(!pack || SSshuttle.supply_packs[pack.id] != pack)
 		return FALSE
 	if(pack.order_flags & (ORDER_INVISIBLE | ORDER_POD_ONLY))
 		return FALSE
@@ -161,12 +161,14 @@
 	var/delivered_count = 0
 	for(var/datum/supply_order/order as anything in bsc_cart.Copy())
 		var/turf/destination = pick_n_take(destinations)
-		var/atom/movable/delivery = order.generate(destination)
+		var/obj/structure/closet/supplypod/podspawn/pod = new(null, /datum/pod_style/advanced)
+		var/atom/movable/delivery = order.generate(pod)
 		var/datum/bank_account/account = order.paying_account || cargo_budget
 		if(QDELETED(delivery))
+			qdel(pod)
 			account.adjust_money(prices[order], "Bluespace cargo delivery refund")
 			continue
-		new /obj/effect/temp_visual/bluespace_fissure(destination)
+		new /obj/effect/pod_landingzone(destination, pod)
 		if(order.paying_account)
 			cargo_budget?.adjust_money(max(0, prices[order] - order.pack.get_cost()), "Bluespace cargo handling fee")
 			SSeconomy.add_audit_entry(account, prices[order], order.pack.name)

@@ -65,8 +65,28 @@
 	TEST_ASSERT_EQUAL(length(console.bsc_cart), 0, "Delivered orders must leave the local cart.")
 	TEST_ASSERT_EQUAL(length(SSshuttle.shopping_list), shared_orders, "Checkout must leave shuttle orders untouched.")
 	var/crates = 0
-	for(var/obj/structure/closet/crate/crate in range(2, pad))
-		crates++
+	for(var/obj/effect/pod_landingzone/zone in range(2, pad))
+		for(var/obj/structure/closet/crate/crate in zone.pod)
+			crates++
 	TEST_ASSERT_EQUAL(crates, 2, "Each paid order must produce one normal cargo crate near the pad.")
 	TEST_ASSERT(!console.checkout(user), "Repeated checkout must not duplicate a delivery.")
 	TEST_ASSERT_EQUAL(budget.account_balance, price * 4, "Repeated checkout must not charge again.")
+
+	// Runtime-generated canister packs share a type but have distinct catalogue IDs.
+	var/datum/supply_pack/canister_pack
+	for(var/id in SSshuttle.supply_packs)
+		var/datum/supply_pack/candidate = SSshuttle.supply_packs[id]
+		if(candidate.type != candidate.id && (/obj/machinery/portable_atmospherics/canister/oxygen in candidate.contains))
+			canister_pack = candidate
+			break
+	TEST_ASSERT(canister_pack, "The catalogue must contain a generated oxygen canister pack.")
+	console.self_paid = FALSE
+	budget.account_balance = round(canister_pack.get_cost()) * 2
+	TEST_ASSERT(console.add_item(user, "[canister_pack.id]"), "Generated canisters must be orderable by catalogue ID.")
+	TEST_ASSERT(console.checkout(user), "A canister order must ship in its original container.")
+	var/canisters = 0
+	for(var/obj/effect/pod_landingzone/zone in range(2, pad))
+		for(var/obj/structure/closet/crate/large/crate in zone.pod)
+			for(var/obj/machinery/portable_atmospherics/canister/oxygen/canister in crate)
+				canisters++
+	TEST_ASSERT_EQUAL(canisters, 1, "The cargo pod must contain the full large crate with its oxygen canister inside.")
