@@ -381,3 +381,10 @@
 	build_path = /obj/item/circuitboard/computer/centcom_testing
 	category = list(RND_CATEGORY_COMPUTER + RND_SUBCATEGORY_COMPUTER_RESEARCH)
 	departmental_flags = DEPARTMENT_BITFLAG_SCIENCE | DEPARTMENT_BITFLAG_ENGINEERING
+
+/datum/design/board/bluespace_cargo
+	name = "Bluespace Cargo Console Board"
+	desc = "A board for a cargo console that delivers orders to a linked BSC pad."
+	build_path = /obj/item/circuitboard/computer/cargo/bluespace
+	category = list(RND_CATEGORY_COMPUTER + RND_SUBCATEGORY_COMPUTER_CARGO)
+	departmental_flags = ALL

@@ -1352,3 +1352,10 @@
 	build_path = /obj/item/circuitboard/machine/gas_seller
 	category = list(RND_CATEGORY_MACHINE + RND_SUBCATEGORY_MACHINE_ATMOS)
 	departmental_flags = ALL
+
+/datum/design/board/bsc_pad
+	name = "BSC Pad Board"
+	desc = "A board for a Bluespace Cargo receiving pad."
+	build_path = /obj/item/circuitboard/machine/bsc_pad
+	category = list(RND_CATEGORY_MACHINE + RND_SUBCATEGORY_MACHINE_CARGO)
+	departmental_flags = ALL

@@ -751,3 +751,7 @@
 	name = "CentCom Testing Initiative console"
 	greyscale_colors = CIRCUIT_COLOR_SCIENCE
 	build_path = /obj/machinery/computer/centcom_testing
+
+/obj/item/circuitboard/computer/cargo/bluespace
+	name = "Bluespace Cargo Console"
+	build_path = /obj/machinery/computer/cargo/bluespace

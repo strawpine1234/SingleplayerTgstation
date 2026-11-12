@@ -4175,6 +4175,7 @@
 #include "code\modules\cargo\centcom_podlauncher.dm"
 #include "code\modules\cargo\coupon.dm"
 #include "code\modules\cargo\exports.dm"
+#include "code\modules\cargo\bluespace_cargo.dm"
 #include "code\modules\cargo\expressconsole.dm"
 #include "code\modules\cargo\goodies.dm"
 #include "code\modules\cargo\materials_market.dm"

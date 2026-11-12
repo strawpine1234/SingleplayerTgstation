@@ -2133,3 +2133,14 @@
 		/datum/stock_part/scanning_module = 1,
 		/obj/item/stack/cable_coil = 5,
 	)
+
+/obj/item/circuitboard/machine/bsc_pad
+	name = "BSC Pad"
+	greyscale_colors = CIRCUIT_COLOR_SUPPLY
+	build_path = /obj/machinery/bsc_pad
+	req_components = list(
+		/datum/stock_part/matter_bin = 1,
+		/datum/stock_part/micro_laser = 2,
+		/obj/item/stack/ore/bluespace_crystal = 1,
+		/obj/item/stack/cable_coil = 5,
+	)

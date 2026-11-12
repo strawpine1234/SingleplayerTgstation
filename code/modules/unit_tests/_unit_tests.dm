@@ -127,6 +127,7 @@
 #include "bitrunning.dm"
 #include "blacksmith.dm"
 #include "blindness.dm"
+#include "bluespace_cargo.dm"
 #include "blood_volume_procs.dm"
 #include "bloody_footprints.dm"
 #include "borg_tools.dm"
