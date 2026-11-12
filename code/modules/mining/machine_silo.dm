@@ -281,7 +281,7 @@
 				"amount" = entry.amount,
 				"time" = entry.timestamp,
 				"noun" = entry.noun,
-				"user_data" = entry.user_data,
+				"user_data" = entry.user_data || ID_DATA(null),
 			)
 		)
 	data["banned_users"] = banned_users
@@ -585,6 +585,8 @@
 	amount = _amount
 	noun = _noun
 	materials = mats.Copy()
+	if(!islist(user_data))
+		user_data = ID_DATA(null)
 	src.user_data = user_data
 	var/list/data = list(
 		"machine_name" = machine_name,

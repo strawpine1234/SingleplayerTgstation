@@ -50,7 +50,7 @@ type Log = {
   amount: number;
   time: string;
   noun: string;
-  user_data: UserData;
+  user_data: UserData | null;
 };
 
 enum Tab {
@@ -263,8 +263,8 @@ const LogsList = (props: LogsListProps) => {
     log,
     searchString: [
       log.action.toLowerCase(),
-      log.user_data.name.toLowerCase(),
-      log.user_data.assignment.toLowerCase(),
+      (log.user_data?.name ?? 'Unknown user').toLowerCase(),
+      (log.user_data?.assignment ?? '').toLowerCase(),
       log.raw_materials.toLowerCase(),
       log.machine_name.toLowerCase(),
       log.area_name.toLowerCase(),
@@ -417,7 +417,9 @@ const LogEntry = (props: Log) => {
           </Stack.Item>
           <Stack.Item style={{ display: 'flex', alignItems: 'center' }}>
             <Button icon="user" color="gray">
-              {user_data.name} ({user_data.assignment})
+              {user_data
+                ? `${user_data.name} (${user_data.assignment})`
+                : 'Unknown user'}
             </Button>
           </Stack.Item>
         </Stack>
@@ -447,7 +449,11 @@ const LogEntry = (props: Log) => {
             <Table.Row className="candystripe" lineHeight={2}>
               <Table.Cell pl={1}>User</Table.Cell>
               <Table.Cell>
-                <UserItem {...user_data} />
+                {user_data ? (
+                  <UserItem {...user_data} />
+                ) : (
+                  'No user identity recorded.'
+                )}
               </Table.Cell>
             </Table.Row>
           </Table>
