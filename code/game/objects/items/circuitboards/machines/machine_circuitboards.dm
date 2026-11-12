@@ -2056,3 +2056,60 @@
 /obj/item/circuitboard/machine/wall_healer/free
 	name = "DeForest Emergency First Aid Station"
 	build_path = /obj/machinery/wall_healer/free
+
+/obj/item/circuitboard/machine/gas_miner
+	name = "Gas Miner"
+	greyscale_colors = CIRCUIT_COLOR_ENGINEERING
+	build_path = /obj/machinery/atmospherics/miner/constructible
+	req_components = list(
+		/datum/stock_part/matter_bin = 2,
+		/datum/stock_part/capacitor = 1,
+		/obj/item/stack/cable_coil = 5,
+	)
+	/// Reuse the existing gas miners' gas definitions and overlay colours.
+	var/static/list/gas_options = list(
+		"Oxygen" = /obj/machinery/atmospherics/miner/oxygen,
+		"Nitrogen" = /obj/machinery/atmospherics/miner/nitrogen,
+		"Carbon dioxide" = /obj/machinery/atmospherics/miner/carbon_dioxide,
+		"Plasma" = /obj/machinery/atmospherics/miner/plasma,
+		"Nitrous oxide" = /obj/machinery/atmospherics/miner/n2o,
+		"Hydrogen" = /obj/machinery/atmospherics/miner/hydrogen,
+		"Water vapor" = /obj/machinery/atmospherics/miner/water_vapor,
+	)
+	var/gas_selection = "Oxygen"
+
+/obj/item/circuitboard/machine/gas_miner/Initialize(mapload)
+	. = ..()
+	select_gas(gas_selection)
+
+/obj/item/circuitboard/machine/gas_miner/examine(mob/user)
+	. = ..()
+	. += span_notice("It is configured for [gas_selection]. Use a multitool to select a different basic gas.")
+
+/obj/item/circuitboard/machine/gas_miner/multitool_act(mob/living/user, obj/item/tool)
+	var/choice = tgui_input_list(user, "Select the gas this miner will produce.", "Gas Miner Configuration", gas_options, gas_selection)
+	if(!choice || QDELETED(src) || !user.can_perform_action(src))
+		return ITEM_INTERACT_BLOCKING
+	if(select_gas(choice))
+		balloon_alert(user, "set to [gas_selection]")
+	return ITEM_INTERACT_SUCCESS
+
+/obj/item/circuitboard/machine/gas_miner/proc/select_gas(selection)
+	if(!(selection in gas_options))
+		return FALSE
+	gas_selection = selection
+	name = "[initial(name)] - [gas_selection] [name_extension]"
+	return TRUE
+
+/obj/item/circuitboard/machine/gas_miner/configure_machine(obj/machinery/atmospherics/miner/constructible/machine)
+	if(!istype(machine))
+		return FALSE
+	var/obj/machinery/atmospherics/miner/template = gas_options[gas_selection]
+	if(!template)
+		return FALSE
+	machine.spawn_id = initial(template.spawn_id)
+	machine.spawn_temp = initial(template.spawn_temp)
+	machine.overlay_color = initial(template.overlay_color)
+	machine.name = "[gas_selection] gas miner"
+	machine.update_appearance()
+	return TRUE

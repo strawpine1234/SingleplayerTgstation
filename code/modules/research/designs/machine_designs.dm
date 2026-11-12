@@ -1331,3 +1331,10 @@
 		RND_CATEGORY_MACHINE + RND_SUBCATEGORY_MACHINE_SERVICE
 	)
 	departmental_flags = DEPARTMENT_BITFLAG_SERVICE
+
+/datum/design/board/gas_miner
+	name = "Gas Miner Board"
+	desc = "A multitool-configurable board for a basic-gas miner."
+	build_path = /obj/item/circuitboard/machine/gas_miner
+	category = list(RND_CATEGORY_MACHINE + RND_SUBCATEGORY_MACHINE_ATMOS)
+	departmental_flags = ALL

@@ -245,6 +245,37 @@
 	overlay_color = "#022e00"
 	spawn_id = /datum/gas/antinoblium
 
+/// Player-built miners use ordinary construction and power, while mapped supply miners stay unchanged.
+/obj/machinery/atmospherics/miner/constructible
+	desc = "A powered gas miner that releases its selected gas into the surrounding room. Click it to switch it on or off."
+	circuit = /obj/item/circuitboard/machine/gas_miner
+	resistance_flags = ACID_PROOF | FIRE_PROOF
+	active = FALSE
+	power_draw = GASMINER_POWER_STATIC
+
+/obj/machinery/atmospherics/miner/constructible/Initialize(mapload)
+	. = ..()
+	circuit.configure_machine(src)
+
+/obj/machinery/atmospherics/miner/constructible/interact(mob/user)
+	if(panel_open)
+		balloon_alert(user, "close the maintenance hatch!")
+		return
+	set_active(!active)
+	balloon_alert(user, active ? "switched on" : "switched off")
+
+/obj/machinery/atmospherics/miner/constructible/examine(mob/user)
+	. = ..()
+	. += span_notice("It is switched [active ? "on" : "off"]. It releases gas into this room, rather than into a pipe.")
+
+/obj/machinery/atmospherics/miner/constructible/screwdriver_act(mob/living/user, obj/item/tool)
+	. = default_deconstruction_screwdriver(user, tool)
+	if(. && panel_open)
+		set_active(FALSE)
+
+/obj/machinery/atmospherics/miner/constructible/crowbar_act(mob/living/user, obj/item/tool)
+	return default_deconstruction_crowbar(user, tool)
+
 #undef GASMINER_POWER_NONE
 #undef GASMINER_POWER_STATIC
 #undef GASMINER_POWER_MOLES

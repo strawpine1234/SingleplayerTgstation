@@ -3,6 +3,7 @@
 	description = "Maintaining station air and related life support systems."
 	node_flags = parent_type::node_flags | TECHWEB_NODE_STARTER
 	unlocked_designs = list(
+		/datum/design/board/gas_miner,
 		/datum/design/board/atmos_control,
 		/datum/design/board/atmosalerts,
 		/datum/design/board/thermomachine,
