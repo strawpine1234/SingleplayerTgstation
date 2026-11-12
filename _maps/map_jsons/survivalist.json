@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "map_name": "Survivalist",
+  "map_path": "map_files/Survivalist",
+  "map_file": "Survivalist.dmm",
+  "shuttles": {
+    "cargo": "cargo_box",
+    "ferry": "ferry_fancy",
+    "whiteship": "whiteship_meta",
+    "emergency": "emergency_meta"
+  }
+}

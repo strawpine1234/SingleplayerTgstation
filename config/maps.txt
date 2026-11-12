@@ -68,3 +68,9 @@ endmap
 
 map runtimestation_minimal
 endmap
+
+# Custom survival map.
+map survivalist
+	minplayers 0
+	votable
+endmap
