@@ -418,6 +418,8 @@
 /obj/machinery/portable_atmospherics/canister/on_deconstruction(disassembled = TRUE)
 	if(!(machine_stat & BROKEN))
 		canister_break()
+	if(circuit)
+		return ..()
 	if(!disassembled)
 		new /obj/item/stack/sheet/iron (drop_location(), 5)
 		qdel(src)
@@ -790,3 +792,34 @@
 
 #undef CAN_DEFAULT_RELEASE_PRESSURE
 #undef TEMPERATURE_RESISTANCE
+
+/// A standard canister with a stock-part-controlled internal volume, not a higher pressure limit.
+/obj/machinery/portable_atmospherics/canister/expanded
+	name = "expanded gas canister"
+	icon_state = "/obj/machinery/portable_atmospherics/canister/expanded"
+	desc = "A portable gas canister with an adjustable internal storage chamber. Its capacity is limited by its lowest-tier stock part."
+	circuit = /obj/item/circuitboard/machine/expanded_canister
+	volume = 4000
+
+/obj/machinery/portable_atmospherics/canister/expanded/RefreshParts()
+	. = ..()
+	var/lowest_tier = 4
+	for(var/datum/stock_part/part in component_parts)
+		lowest_tier = min(lowest_tier, part.tier)
+	var/list/multipliers = list(2, 4, 6, 10)
+	volume = /obj/machinery/portable_atmospherics/canister::volume * multipliers[clamp(lowest_tier, 1, 4)]
+	// Parts are refreshed during machinery initialization, before the gas mixture exists.
+	if(air_contents)
+		air_contents.volume = volume
+		SSair.start_processing_machine(src)
+		update_appearance()
+
+/obj/machinery/portable_atmospherics/canister/expanded/examine(mob/user)
+	. = ..()
+	. += span_notice("Its internal volume is [volume] litres, equivalent to [volume / /obj/machinery/portable_atmospherics/canister::volume] standard canisters at the same temperature and pressure.")
+	. += span_notice("Capacity by lowest installed part tier: T1 2x, T2 4x, T3 6x, T4 10x. Open the hatch to upgrade parts with a part replacer. Remove the cell, then crowbar the open hatch to disassemble it.")
+
+/obj/machinery/portable_atmospherics/canister/expanded/crowbar_act(mob/living/user, obj/item/tool)
+	if(internal_cell)
+		return ..()
+	return default_deconstruction_crowbar(user, tool)

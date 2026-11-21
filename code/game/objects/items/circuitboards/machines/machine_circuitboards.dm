@@ -2144,3 +2144,13 @@
 		/obj/item/stack/ore/bluespace_crystal = 1,
 		/obj/item/stack/cable_coil = 5,
 	)
+
+/obj/item/circuitboard/machine/expanded_canister
+	name = "Expanded Gas Canister"
+	greyscale_colors = CIRCUIT_COLOR_ENGINEERING
+	build_path = /obj/machinery/portable_atmospherics/canister/expanded
+	req_components = list(
+		/datum/stock_part/matter_bin = 1,
+		/datum/stock_part/servo = 2,
+		/datum/stock_part/scanning_module = 1,
+	)

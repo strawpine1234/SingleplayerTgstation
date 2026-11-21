@@ -1359,3 +1359,12 @@
 	build_path = /obj/item/circuitboard/machine/bsc_pad
 	category = list(RND_CATEGORY_MACHINE + RND_SUBCATEGORY_MACHINE_CARGO)
 	departmental_flags = ALL
+
+/datum/design/board/expanded_canister
+	research_icon = 'icons/map_icons/objects.dmi'
+	research_icon_state = "/obj/machinery/portable_atmospherics/canister/expanded"
+	name = "Expanded Gas Canister Board"
+	desc = "A board for an upgradeable portable gas canister with two to ten times the normal internal volume."
+	build_path = /obj/item/circuitboard/machine/expanded_canister
+	category = list(RND_CATEGORY_MACHINE + RND_SUBCATEGORY_MACHINE_ATMOS)
+	departmental_flags = ALL

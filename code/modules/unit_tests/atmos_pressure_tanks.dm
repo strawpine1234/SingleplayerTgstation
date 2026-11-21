@@ -52,3 +52,38 @@
 	var/moles_after = tank_moles()
 
 	TEST_ASSERT(abs(moles_after - moles_before) < 1, "Joining two tank groups with an empty tank changed the total gas from [moles_before] to [moles_after] moles")
+
+/// Changing storage volume must conserve gas and follow the advertised part tiers.
+/datum/unit_test/expanded_canister
+	normal_floor_required = TRUE
+
+/datum/unit_test/expanded_canister/Run()
+	var/obj/machinery/portable_atmospherics/canister/expanded/canister = allocate(/obj/machinery/portable_atmospherics/canister/expanded)
+	TEST_ASSERT_EQUAL(canister.volume, 4000, "A new T1 canister must have twice the normal volume.")
+	TEST_ASSERT_EQUAL(length(canister.component_parts), 5, "Construction requires a board, one bin, two servos and one scanner.")
+	var/datum/gas_mixture/mix = canister.return_air()
+	mix.set_gas(/datum/gas/oxygen, 100)
+	var/original_moles = mix.total_moles()
+	var/original_pressure = mix.return_pressure()
+	var/list/volumes = list(4000, 8000, 12000, 20000)
+	for(var/tier in 1 to 4)
+		canister.component_parts = list(canister.circuit)
+		for(var/datum/stock_part/part as anything in GLOB.stock_part_datums)
+			var/datum/stock_part/instance = GLOB.stock_part_datums[part]
+			if(instance.tier != tier)
+				continue
+			if(istype(instance, /datum/stock_part/matter_bin) || istype(instance, /datum/stock_part/scanning_module))
+				canister.component_parts += instance
+			if(istype(instance, /datum/stock_part/servo))
+				canister.component_parts += instance
+				canister.component_parts += instance
+		canister.RefreshParts()
+		TEST_ASSERT_EQUAL(mix.volume, volumes[tier], "The gas mixture must match the advertised tier capacity.")
+		TEST_ASSERT_EQUAL(mix.total_moles(), original_moles, "Upgrades must not create or destroy gas.")
+		TEST_ASSERT(abs(mix.return_pressure() - original_pressure * 4000 / volumes[tier]) < 0.01, "Pressure must decrease in proportion to the expanded volume.")
+	canister.component_parts += GLOB.stock_part_datums[/datum/stock_part/servo]
+	canister.RefreshParts()
+	TEST_ASSERT_EQUAL(mix.volume, 4000, "A lower-tier part must limit mixed-tier capacity.")
+	canister.deconstruct(TRUE)
+	TEST_ASSERT(QDELETED(canister), "The expanded canister must support normal machine disassembly.")
+	TEST_ASSERT(locate(/obj/item/circuitboard/machine/expanded_canister) in run_loc_floor_bottom_left, "Disassembly must return its circuit board.")
