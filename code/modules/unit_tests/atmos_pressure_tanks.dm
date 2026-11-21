@@ -84,6 +84,12 @@
 	canister.component_parts += GLOB.stock_part_datums[/datum/stock_part/servo]
 	canister.RefreshParts()
 	TEST_ASSERT_EQUAL(mix.volume, 4000, "A lower-tier part must limit mixed-tier capacity.")
+	// Every normal gas label must retain its exact palette and the expanded frame.
+	for(var/gas_name in GLOB.gas_id_to_canister)
+		var/obj/machinery/portable_atmospherics/canister/label = GLOB.gas_id_to_canister[gas_name]
+		canister.set_greyscale(initial(label.greyscale_colors), initial(label.greyscale_config))
+		TEST_ASSERT(ispath(canister.greyscale_config, /datum/greyscale_config/expanded_canister), "Gas label [gas_name] lost the expanded canister frame.")
+		TEST_ASSERT_EQUAL(canister.greyscale_colors, initial(label.greyscale_colors), "Gas label [gas_name] must preserve the standard palette.")
 	canister.deconstruct(TRUE)
 	TEST_ASSERT(QDELETED(canister), "The expanded canister must support normal machine disassembly.")
 	TEST_ASSERT(locate(/obj/item/circuitboard/machine/expanded_canister) in run_loc_floor_bottom_left, "Disassembly must return its circuit board.")

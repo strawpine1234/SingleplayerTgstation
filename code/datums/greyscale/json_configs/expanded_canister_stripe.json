@@ -1,0 +1,18 @@
+{
+	"": [
+		{
+			"type": "reference",
+			"reference_type": "/datum/greyscale_config/canister/stripe",
+			"blend_mode": "overlay",
+			"color_ids": [
+				1,
+				2
+			]
+		},
+		{
+			"type": "icon_state",
+			"icon_state": "frame",
+			"blend_mode": "overlay"
+		}
+	]
+}

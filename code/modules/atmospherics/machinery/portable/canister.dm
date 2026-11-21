@@ -796,6 +796,7 @@
 /// A standard canister with a stock-part-controlled internal volume, not a higher pressure limit.
 /obj/machinery/portable_atmospherics/canister/expanded
 	name = "expanded gas canister"
+	greyscale_config = /datum/greyscale_config/expanded_canister
 	icon_state = "/obj/machinery/portable_atmospherics/canister/expanded"
 	desc = "A portable gas canister with an adjustable internal storage chamber. Its capacity is limited by its lowest-tier stock part."
 	circuit = /obj/item/circuitboard/machine/expanded_canister
@@ -823,3 +824,13 @@
 	if(internal_cell)
 		return ..()
 	return default_deconstruction_crowbar(user, tool)
+
+/// Relabelling changes the gas palette, but keeps the expanded model's reinforced frame.
+/obj/machinery/portable_atmospherics/canister/expanded/set_greyscale(list/colors, new_config)
+	var/static/list/expanded_styles = list(
+		/datum/greyscale_config/canister = /datum/greyscale_config/expanded_canister,
+		/datum/greyscale_config/canister/stripe = /datum/greyscale_config/expanded_canister/stripe,
+		/datum/greyscale_config/canister/double_stripe = /datum/greyscale_config/expanded_canister/double_stripe,
+		/datum/greyscale_config/canister/hazard = /datum/greyscale_config/expanded_canister/hazard,
+	)
+	return ..(colors, expanded_styles[new_config] || new_config)

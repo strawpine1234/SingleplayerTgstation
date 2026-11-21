@@ -142,3 +142,23 @@
 	name = "Thermomachine"
 	icon_file = 'icons/obj/machines/atmospherics/thermomachine.dmi'
 	json_config = 'code/datums/greyscale/json_configs/thermomachine.json'
+
+/datum/greyscale_config/expanded_canister
+	name = "Expanded Canister Default"
+	icon_file = 'icons/obj/pipes_n_cables/expanded_canister.dmi'
+	json_config = 'code/datums/greyscale/json_configs/expanded_canister_default.json'
+
+/datum/greyscale_config/expanded_canister/stripe
+	name = "Expanded Canister Stripe"
+	icon_file = 'icons/obj/pipes_n_cables/expanded_canister.dmi'
+	json_config = 'code/datums/greyscale/json_configs/expanded_canister_stripe.json'
+
+/datum/greyscale_config/expanded_canister/double_stripe
+	name = "Expanded Canister Double Stripe"
+	icon_file = 'icons/obj/pipes_n_cables/expanded_canister.dmi'
+	json_config = 'code/datums/greyscale/json_configs/expanded_canister_double_stripe.json'
+
+/datum/greyscale_config/expanded_canister/hazard
+	name = "Expanded Canister Hazard"
+	icon_file = 'icons/obj/pipes_n_cables/expanded_canister.dmi'
+	json_config = 'code/datums/greyscale/json_configs/expanded_canister_hazard.json'
