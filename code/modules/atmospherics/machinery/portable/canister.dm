@@ -825,7 +825,7 @@
 		return ..()
 	return default_deconstruction_crowbar(user, tool)
 
-/// Relabelling changes the gas palette, but keeps the expanded model's reinforced frame.
+/// Relabelling changes the gas palette, but keeps the expanded model's darker finish.
 /obj/machinery/portable_atmospherics/canister/expanded/set_greyscale(list/colors, new_config)
 	var/static/list/expanded_styles = list(
 		/datum/greyscale_config/canister = /datum/greyscale_config/expanded_canister,

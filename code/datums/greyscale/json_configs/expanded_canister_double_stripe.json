@@ -11,8 +11,8 @@
 		},
 		{
 			"type": "icon_state",
-			"icon_state": "frame",
-			"blend_mode": "overlay"
+			"icon_state": "shade",
+			"blend_mode": "multiply"
 		}
 	]
 }
