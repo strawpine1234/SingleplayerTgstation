@@ -1368,3 +1368,10 @@
 	build_path = /obj/item/circuitboard/machine/expanded_canister
 	category = list(RND_CATEGORY_MACHINE + RND_SUBCATEGORY_MACHINE_ATMOS)
 	departmental_flags = ALL
+
+/datum/design/board/second_chance
+	name = "Second Chance Reconstruction Pod Board"
+	desc = "A board for a one-use genetic insurance printer."
+	build_path = /obj/item/circuitboard/machine/second_chance
+	category = list(RND_CATEGORY_MACHINE + RND_SUBCATEGORY_MACHINE_MEDICAL)
+	departmental_flags = ALL

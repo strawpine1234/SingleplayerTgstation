@@ -2154,3 +2154,9 @@
 		/datum/stock_part/servo = 2,
 		/datum/stock_part/scanning_module = 1,
 	)
+
+/obj/item/circuitboard/machine/second_chance
+	name = "Second Chance Reconstruction Pod"
+	greyscale_colors = CIRCUIT_COLOR_MEDICAL
+	build_path = /obj/machinery/second_chance
+	req_components = list(/datum/stock_part/matter_bin = 1, /datum/stock_part/servo = 2, /datum/stock_part/scanning_module = 1)

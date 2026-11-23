@@ -3,6 +3,7 @@
 	description = "Essential medical tools to patch you up while medbay is still intact."
 	node_flags = parent_type::node_flags | TECHWEB_NODE_STARTER
 	unlocked_designs = list(
+		/datum/design/board/second_chance,
 		/datum/design/beaker,
 		/datum/design/blood_filter,
 		/datum/design/blood_pack,
